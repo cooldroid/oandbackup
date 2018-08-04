@@ -186,18 +186,12 @@ implements SharedPreferences.OnSharedPreferenceChangeListener, ActionListener
                         crypto.encryptFromAppInfo(OAndBackup.this, backupDir, appInfo, backupMode, prefs);
                         if(crypto.isErrorSet())
                         {
-                            Crypto.cleanUpEncryptedFiles(new File(backupDir, appInfo.getPackageName()), appInfo.getSourceDir(), appInfo.getDataDir(), backupMode, prefs.getBoolean("backupExternalFiles", false));
+                            Crypto.cleanUpEncryptedFiles(new File(backupDir, appInfo.getPackageName()), appInfo.getSourceDir(), appInfo.getDataDir(), backupMode, prefs.getBoolean("backupExternalFiles", false), prefs.getBoolean("backupExpansionFiles", false));
                             backupRet++;
                         }
                     }
                     // køre på uitråd for at undgå WindowLeaked
-                    runOnUiThread(new Runnable()
-                    {
-                        public void run()
-                        {
-                            refreshSingle(appInfo);
-                        }
-                    });
+                    runOnUiThread(() -> refreshSingle(appInfo));
                 }
                 handleMessages.endMessage();
                 if(backupRet == 0)
@@ -216,30 +210,26 @@ implements SharedPreferences.OnSharedPreferenceChangeListener, ActionListener
     }
     public void callRestore(final AppInfo appInfo, final int mode)
     {
-        Thread restoreThread = new Thread(new Runnable()
-        {
-            public void run()
+        Thread restoreThread = new Thread(() -> {
+            int ret = 0;
+            if(backupDir != null)
             {
-                int ret = 0;
-                if(backupDir != null)
-                {
-                    handleMessages.showMessage(appInfo.getLabel(), getString(R.string.restore));
-                    Crypto crypto = null;
-                    if(Crypto.isAvailable(OAndBackup.this) && Crypto.needToDecrypt(backupDir, appInfo, mode))
-                        crypto = getCrypto();
-                    ret = BackupRestoreHelper.restore(OAndBackup.this, backupDir, appInfo, shellCommands, mode, crypto);
-                    refresh();
-                }
-                handleMessages.endMessage();
-                if(ret == 0)
-                {
-                    NotificationHelper.showNotification(OAndBackup.this, OAndBackup.class, notificationId++, getString(R.string.restoreSuccess), appInfo.getLabel(), true);
-                }
-                else
-                {
-                    NotificationHelper.showNotification(OAndBackup.this, OAndBackup.class, notificationId++, getString(R.string.restoreFailure), appInfo.getLabel(), true);
-                    Utils.showErrors(OAndBackup.this);
-                }
+                handleMessages.showMessage(appInfo.getLabel(), getString(R.string.restore));
+                Crypto crypto = null;
+                if(Crypto.isAvailable(OAndBackup.this) && Crypto.needToDecrypt(backupDir, appInfo, mode))
+                    crypto = getCrypto();
+                ret = BackupRestoreHelper.restore(OAndBackup.this, backupDir, appInfo, shellCommands, mode, crypto);
+                refresh();
+            }
+            handleMessages.endMessage();
+            if(ret == 0)
+            {
+                NotificationHelper.showNotification(OAndBackup.this, OAndBackup.class, notificationId++, getString(R.string.restoreSuccess), appInfo.getLabel(), true);
+            }
+            else
+            {
+                NotificationHelper.showNotification(OAndBackup.this, OAndBackup.class, notificationId++, getString(R.string.restoreFailure), appInfo.getLabel(), true);
+                Utils.showErrors(OAndBackup.this);
             }
         });
         restoreThread.start();
@@ -247,29 +237,21 @@ implements SharedPreferences.OnSharedPreferenceChangeListener, ActionListener
     }
     public void refresh()
     {
-        Thread refreshThread = new Thread(new Runnable()
-        {
-            public void run()
-            {
-                handleMessages.showMessage("", getString(R.string.collectingData));
-                appInfoList = AppInfoHelper.getPackageInfo(OAndBackup.this, backupDir, true);
-                runOnUiThread(new Runnable()
+        Thread refreshThread = new Thread(() -> {
+            handleMessages.showMessage("", getString(R.string.collectingData));
+            appInfoList = AppInfoHelper.getPackageInfo(OAndBackup.this, backupDir, true);
+            runOnUiThread(() -> {
+                // temporary work-around until the race condition between refresh and oncreate when returning from batchactivity with changesmade have been fixed
+                if(adapter != null && sorter != null)
                 {
-                    public void run()
-                    {
-                        // temporary work-around until the race condition between refresh and oncreate when returning from batchactivity with changesmade have been fixed
-                        if(adapter != null && sorter != null)
-                        {
-                            adapter.setNewOriginalValues(appInfoList);
-                            sorter.sort(sorter.getFilteringMethod().getId());
-                            sorter.sort(sorter.getSortingMethod().getId());
-                            adapter.restoreFilter();
-                            adapter.notifyDataSetChanged();
-                        }
-                    }
-                });
-                handleMessages.endMessage();
-            }
+                    adapter.setNewOriginalValues(appInfoList);
+                    sorter.sort(sorter.getFilteringMethod().getId());
+                    sorter.sort(sorter.getSortingMethod().getId());
+                    adapter.restoreFilter();
+                    adapter.notifyDataSetChanged();
+                }
+            });
+            handleMessages.endMessage();
         });
         refreshThread.start();
         threadId = refreshThread.getId();
@@ -388,10 +370,10 @@ implements SharedPreferences.OnSharedPreferenceChangeListener, ActionListener
         }
         return true;
     }
-    public Intent batchIntent(Class batchClass, boolean backup)
+    public Intent batchIntent(Class batchClass, int operation)
     {
         Intent batchIntent = new Intent(this, batchClass);
-        batchIntent.putExtra("dk.jens.backup.backupBoolean", backup);
+        batchIntent.putExtra("dk.jens.backup.operation", operation);
         batchIntent.putStringArrayListExtra("dk.jens.backup.users", shellCommands.getUsers());
         batchIntent.putExtra("dk.jens.backup.filteringMethodId", sorter.getFilteringMethod().getId());
         batchIntent.putExtra("dk.jens.backup.sortingMethodId", sorter.getSortingMethod().getId());
@@ -406,10 +388,9 @@ implements SharedPreferences.OnSharedPreferenceChangeListener, ActionListener
                 refresh();
                 break;
             case R.id.batchbackup:
-                startActivityForResult(batchIntent(BatchActivity.class, true), BATCH_REQUEST);
-                break;
             case R.id.batchrestore:
-                startActivityForResult(batchIntent(BatchActivity.class, false), BATCH_REQUEST);
+            case R.id.batchuninstall:
+                startActivityForResult(batchIntent(BatchActivity.class, item.getItemId()), BATCH_REQUEST);
                 break;
             case R.id.preferences:
                 startActivity(new Intent(this, Preferences.class));
@@ -460,35 +441,26 @@ implements SharedPreferences.OnSharedPreferenceChangeListener, ActionListener
                 new AlertDialog.Builder(this)
                 .setTitle(adapter.getItem(info.position).getLabel())
                 .setMessage(R.string.uninstallDialogMessage)
-                .setPositiveButton(R.string.dialogYes, new DialogInterface.OnClickListener()
-                {
-                    @Override
-                    public void onClick(DialogInterface dialog, int which)
-                    {
-                        Thread uninstallThread = new Thread(new Runnable()
+                .setPositiveButton(R.string.dialogYes, (dialog, which) -> {
+                    Thread uninstallThread = new Thread(() -> {
+                        AppInfo appInfo = adapter.getItem(info.position);
+                        Log.i(TAG, "uninstalling " + appInfo.getLabel());
+                        handleMessages.showMessage(appInfo.getLabel(), getString(R.string.uninstallProgress));
+                        int ret = shellCommands.uninstall(appInfo.getPackageName(), appInfo.getSourceDir(), appInfo.getDataDir(), appInfo.isSystem());
+                        refresh();
+                        handleMessages.endMessage();
+                        if(ret == 0)
                         {
-                            public void run()
-                            {
-                                AppInfo appInfo = adapter.getItem(info.position);
-                                Log.i(TAG, "uninstalling " + appInfo.getLabel());
-                                handleMessages.showMessage(appInfo.getLabel(), getString(R.string.uninstallProgress));
-                                int ret = shellCommands.uninstall(appInfo.getPackageName(), appInfo.getSourceDir(), appInfo.getDataDir(), appInfo.isSystem());
-                                refresh();
-                                handleMessages.endMessage();
-                                if(ret == 0)
-                                {
-                                    NotificationHelper.showNotification(OAndBackup.this, OAndBackup.class, notificationId++, getString(R.string.uninstallSuccess), appInfo.getLabel(), true);
-                                }
-                                else
-                                {
-                                    NotificationHelper.showNotification(OAndBackup.this, OAndBackup.class, notificationId++, getString(R.string.uninstallFailure), appInfo.getLabel(), true);
-                                    Utils.showErrors(OAndBackup.this);
-                                }
-                            }
-                        });
-                        uninstallThread.start();
-                        threadId = uninstallThread.getId();
-                    }
+                            NotificationHelper.showNotification(OAndBackup.this, OAndBackup.class, notificationId++, getString(R.string.uninstallSuccess), appInfo.getLabel(), true);
+                        }
+                        else
+                        {
+                            NotificationHelper.showNotification(OAndBackup.this, OAndBackup.class, notificationId++, getString(R.string.uninstallFailure), appInfo.getLabel(), true);
+                            Utils.showErrors(OAndBackup.this);
+                        }
+                    });
+                    uninstallThread.start();
+                    threadId = uninstallThread.getId();
                 })
                 .setNegativeButton(R.string.dialogNo, null)
                 .show();
@@ -497,28 +469,19 @@ implements SharedPreferences.OnSharedPreferenceChangeListener, ActionListener
                 new AlertDialog.Builder(this)
                 .setTitle(adapter.getItem(info.position).getLabel())
                 .setMessage(R.string.deleteBackupDialogMessage)
-                .setPositiveButton(R.string.dialogYes, new DialogInterface.OnClickListener()
-                {
-                    @Override
-                    public void onClick(DialogInterface dialog, int which)
-                    {
-                        Thread deleteBackupThread = new Thread(new Runnable()
+                .setPositiveButton(R.string.dialogYes, (dialog, which) -> {
+                    Thread deleteBackupThread = new Thread(() -> {
+                        handleMessages.showMessage(adapter.getItem(info.position).getLabel(), getString(R.string.deleteBackup));
+                        if(backupDir != null)
                         {
-                            public void run()
-                            {
-                                handleMessages.showMessage(adapter.getItem(info.position).getLabel(), getString(R.string.deleteBackup));
-                                if(backupDir != null)
-                                {
-                                    File backupSubDir = new File(backupDir, adapter.getItem(info.position).getPackageName());
-                                    shellCommands.deleteBackup(backupSubDir);
-                                    refresh(); // behøver ikke refresh af alle pakkerne, men refresh(packageName) kalder readLogFile(), som ikke kan håndtere, hvis logfilen ikke findes
-                                }
-                                handleMessages.endMessage();
-                            }
-                        });
-                        deleteBackupThread.start();
-                        threadId = deleteBackupThread.getId();
-                    }
+                            File backupSubDir = new File(backupDir, adapter.getItem(info.position).getPackageName());
+                            shellCommands.deleteBackup(backupSubDir);
+                            refresh(); // behøver ikke refresh af alle pakkerne, men refresh(packageName) kalder readLogFile(), som ikke kan håndtere, hvis logfilen ikke findes
+                        }
+                        handleMessages.endMessage();
+                    });
+                    deleteBackupThread.start();
+                    threadId = deleteBackupThread.getId();
                 })
                 .setNegativeButton(R.string.dialogNo, null)
                 .show();
@@ -534,7 +497,7 @@ implements SharedPreferences.OnSharedPreferenceChangeListener, ActionListener
                 File apk = new File(backupDir, appInfo.getPackageName() + "/" + appInfo.getLogInfo().getApk());
                 String dataPath = appInfo.getLogInfo().getDataDir();
                 dataPath = dataPath.substring(dataPath.lastIndexOf("/") + 1);
-                File data = new File(backupDir, appInfo.getPackageName() + "/" + dataPath + ".zip");
+                File data = new File(backupDir, appInfo.getPackageName() + "/" + dataPath + ".tar.gz");
                 Bundle arguments = new Bundle();
                 arguments.putString("label", appInfo.getLabel());
                 if(apk.exists())
@@ -618,11 +581,11 @@ implements SharedPreferences.OnSharedPreferenceChangeListener, ActionListener
     }
     public void checkBusybox()
     {
-        if(!shellCommands.checkBusybox())
+        if(!shellCommands.isBusybox())
             Utils.showWarning(this, "", getString(R.string.busyboxProblem));
     }
     private void checkOabUtils() {
-        if(!shellCommands.checkOabUtils()) {
+        if(!shellCommands.isOabUtils()) {
             Utils.showWarning(this, "", getString(R.string.oabUtilsProblem));
         }
     }
@@ -675,7 +638,7 @@ implements SharedPreferences.OnSharedPreferenceChangeListener, ActionListener
                 handleMessages.endMessage();
             }
 
-            listView = (ListView) findViewById(R.id.listview);
+            listView = findViewById(R.id.listview);
             registerForContextMenu(listView);
 
             adapter = new AppInfoAdapter(OAndBackup.this, R.layout.listlayout, appInfoList);
@@ -687,21 +650,13 @@ implements SharedPreferences.OnSharedPreferenceChangeListener, ActionListener
                 sorter.sort(Sorter.convertFilteringId(prefs.getInt("filteringId", 0)));
                 sorter.sort(Sorter.convertSortingId(prefs.getInt("sortingId", 1)));
             }
-            runOnUiThread(new Runnable(){
-                public void run()
-                {
-                    listView.setAdapter(adapter);
-                    listView.setSelection(firstVisiblePosition);
-                    listView.setOnItemClickListener(new AdapterView.OnItemClickListener()
-                    {
-                        @Override
-                        public void onItemClick(AdapterView<?> parent, View v, int pos, long id)
-                        {
-                            AppInfo appInfo = adapter.getItem(pos);
-                            displayDialog(appInfo);
-                        }
-                    });
-                }
+            runOnUiThread(() -> {
+                listView.setAdapter(adapter);
+                listView.setSelection(firstVisiblePosition);
+                listView.setOnItemClickListener((parent, v, pos, id) -> {
+                    AppInfo appInfo = adapter.getItem(pos);
+                    displayDialog(appInfo);
+                });
             });
         }
     }

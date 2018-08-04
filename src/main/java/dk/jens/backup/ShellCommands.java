@@ -1,5 +1,6 @@
 package dk.jens.backup;
 
+import android.annotation.SuppressLint;
 import android.app.ActivityManager;
 import android.content.Context;
 import android.content.SharedPreferences;
@@ -8,6 +9,8 @@ import android.text.TextUtils;
 import android.util.Log;
 import org.json.JSONException;
 import org.json.JSONObject;
+
+import com.topjohnwu.superuser.Shell;
 
 import java.io.BufferedWriter;
 import java.io.DataOutputStream;
@@ -26,7 +29,8 @@ public class ShellCommands implements CommandHandler.UnexpectedExceptionListener
 {
     final static String TAG = OAndBackup.TAG;
     final static String EXTERNAL_FILES = "external_files";
-
+    final static String EXPANSION_FILES = "expansion_files";
+	
     private final String oabUtils;
     private boolean legacyMode;
 
@@ -42,19 +46,18 @@ public class ShellCommands implements CommandHandler.UnexpectedExceptionListener
     {
         this.users = users;
         this.prefs = prefs;
-        String defaultBox = Build.VERSION.SDK_INT >= 23 ? "toybox" : "busybox";
-        busybox = prefs.getString(Constants.PREFS_PATH_BUSYBOX, defaultBox).trim();
+        busybox = prefs.getString(Constants.PREFS_PATH_BUSYBOX, "").trim();
         if(busybox.length() == 0)
         {
-            String[] boxPaths = new String[] {"toybox", "busybox",
-                "/system/xbin/busybox"};
+            String[] boxPaths = new String[] {"/sbin/busybox", "/sbin/.core/busybox/busybox",
+                    "/system/xbin/busybox"};
             for(String box : boxPaths) {
                 if(checkBusybox(box)) {
                     busybox = box;
                     break;
                 }
                 // fallback:
-                busybox = "busybox";
+                busybox = Build.VERSION.SDK_INT >= 23 ? "toybox" : "busybox";
             }
         }
         this.users = getUsers();
@@ -70,6 +73,14 @@ public class ShellCommands implements CommandHandler.UnexpectedExceptionListener
     {
         this(prefs, null, filesDir);
         // initialize with userlist as null. getUsers checks if list is null and simply returns it if isn't and if its size is greater than 0.
+    }
+
+    public boolean isBusybox() {
+        return !busybox.equals("toybox");
+    }
+
+    public boolean isOabUtils() {
+        return !legacyMode;
     }
 
     @Override
@@ -93,36 +104,77 @@ public class ShellCommands implements CommandHandler.UnexpectedExceptionListener
         List<String> commands = new ArrayList<>();
         // -L because fat (which will often be used to store the backup files)
         // doesn't support symlinks
-        String followSymlinks = prefs.getBoolean("followSymlinks", true) ? "L" : "";
+        String followSymlinks = prefs.getBoolean("followSymlinks", true) ? "h" : "";
+
+        File fPackageData = new File(packageData);
+        String folder = fPackageData.getName();
+        String folderPath = fPackageData.getParentFile().getPath();
+
+        File apkFile = new File(packageApk);
+        //String backupAPKCommand = packageApk.isEmpty() ? "" : "cp " + packageApk + " " + backupSubDirPath;
+        String backupAPKCommand = packageApk.isEmpty() ? "" :
+                busybox + " tar -czf " + backupSubDirPath + "/" + folder + ".apk.gz " +
+                "-C " + apkFile.getParent() + " " + apkFile.getName();
+        String[] excludeFolders = new String[] {"lib", "cache", "app_webview", "app_textures", "code_cache"};
+        StringBuilder excludes = new StringBuilder();
+        for (String exclFolder: excludeFolders) {
+            excludes.append(" --exclude='" + folder + "/" + exclFolder + "'");
+        }
+        String backupDataCommand = busybox + " tar -cz" + followSymlinks + "f " +
+                backupSubDirPath + "/" + folder + ".tar.gz " +
+                "-C " + folderPath + excludes + " " + folder;
         switch(backupMode)
         {
             case AppInfo.MODE_APK:
-                commands.add("cp " + packageApk + " " + backupSubDirPath);
+                commands.add(backupAPKCommand);
                 break;
             case AppInfo.MODE_DATA:
-                commands.add("cp -R" + followSymlinks + " " + packageData + " " + backupSubDirPath);
+                commands.add(backupDataCommand);
                 break;
             default: // defaults to MODE_BOTH
-                commands.add("cp -R" + followSymlinks + " " + packageData + " " + backupSubDirPath);
-                commands.add("cp " + packageApk + " " + backupSubDirPath);
+                commands.add(backupDataCommand);
+                commands.add(backupAPKCommand);
                 break;
         }
         File externalFilesDir = getExternalFilesDirPath(context, packageData);
         File backupSubDirExternalFiles = null;
         boolean backupExternalFiles = prefs.getBoolean("backupExternalFiles", false);
         if(backupExternalFiles && backupMode != AppInfo.MODE_APK && externalFilesDir != null) {
-            backupSubDirExternalFiles = new File(backupSubDir, EXTERNAL_FILES);
-            if(backupSubDirExternalFiles.exists() || backupSubDirExternalFiles.mkdir()) {
-                commands.add("cp -R" + followSymlinks + " " +
-                swapBackupDirPath(externalFilesDir.getAbsolutePath()) +
-                " " + swapBackupDirPath(backupSubDir.getAbsolutePath() +
-                "/" + EXTERNAL_FILES));
-            } else {
-                Log.e(TAG, "couldn't create " + backupSubDirExternalFiles.getAbsolutePath());
+            if (folderSize(externalFilesDir) > 0) {
+                String[] externalExcludeFolders = new String[] {"cache", "files/.vungle"};
+                StringBuilder externalExcludes = new StringBuilder();
+                for (String exclFolder: externalExcludeFolders) {
+                    externalExcludes.append(" --exclude='" + folder + "/" + exclFolder + "'");
+                }
+                backupSubDirExternalFiles = new File(backupSubDir, EXTERNAL_FILES);
+                if (backupSubDirExternalFiles.exists() || backupSubDirExternalFiles.mkdir()) {
+                    String externalFolderPath = swapBackupDirPath(externalFilesDir.getParentFile().getAbsolutePath());
+                    commands.add(busybox + " tar -cz" + followSymlinks + "f " +
+                            swapBackupDirPath(backupSubDir.getAbsolutePath() + "/" + EXTERNAL_FILES + "/" + folder + ".tar.gz") +
+                            " -C " + externalFolderPath + externalExcludes + " " + folder);
+                } else {
+                    Log.e(TAG, "couldn't create " + backupSubDirExternalFiles.getAbsolutePath());
+                }
             }
         } else if(!backupExternalFiles && backupMode != AppInfo.MODE_APK) {
+            deleteBackup(new File(backupSubDir, EXTERNAL_FILES));
+        }
+
+        File expansionDir = getExpansionDirectoryPath(context, packageData);
+        File backupSubDirExpansionFiles = null;
+        boolean backupExpansionFiles = prefs.getBoolean("backupExpansionFiles", false);
+
+        if (backupExpansionFiles && backupMode != AppInfo.MODE_APK && expansionDir != null) {
+            backupSubDirExpansionFiles = new File(backupSubDir, EXPANSION_FILES);
+            if (backupSubDirExpansionFiles.exists() || backupSubDirExpansionFiles.mkdir()) {
+                commands.add(busybox + " cp -R " + swapBackupDirPath(expansionDir.getAbsolutePath()) +
+                        " " + swapBackupDirPath(backupSubDir.getAbsolutePath() + "/" + EXPANSION_FILES));
+            } else {
+                Log.e(TAG, "couldn't create " + backupSubDirExpansionFiles.getAbsolutePath());
+            }
+        } else if (!backupExpansionFiles && backupMode != AppInfo.MODE_APK) {
             String data = packageData.substring(packageData.lastIndexOf("/"));
-            deleteBackup(new File(backupSubDir, EXTERNAL_FILES  + "/" + data + ".zip.gpg"));
+            deleteBackup(new File(backupSubDir, EXPANSION_FILES));
         }
         List<String> errors = new ArrayList<>();
         int ret = CommandHandler.runCmd("su", commands, line -> {},
@@ -147,15 +199,15 @@ public class ShellCommands implements CommandHandler.UnexpectedExceptionListener
         if(backupSubDirPath.startsWith(context.getApplicationInfo().dataDir))
         {
             /**
-                * if backupDir is set to oab's own datadir (/data/data/dk.jens.backup)
-                * we need to ensure that the permissions are correct before trying to
-                * zip. on the external storage, gid will be sdcard_r (or something similar)
-                * without any changes but in the app's own datadir files will have both uid
-                * and gid as 0 / root when they are first copied with su.
+            * if backupDir is set to oab's own datadir (/data/data/dk.jens.backup)
+            * we need to ensure that the permissions are correct before trying to
+            * zip. on the external storage, gid will be sdcard_r (or something similar)
+            * without any changes but in the app's own datadir files will have both uid
+            * and gid as 0 / root when they are first copied with su.
             */
             ret = ret + setPermissions(backupSubDirPath);
         }
-        String folder = new File(packageData).getName();
+        /*
         deleteBackup(new File(backupSubDir, folder + "/lib"));
         if(label.equals(TAG))
         {
@@ -167,74 +219,89 @@ public class ShellCommands implements CommandHandler.UnexpectedExceptionListener
             int zipret = compress(new File(backupSubDir, folder));
             if(backupSubDirExternalFiles != null)
                 zipret += compress(new File(backupSubDirExternalFiles, packageData.substring(packageData.lastIndexOf("/") + 1)));
-            if(zipret != 0)
+            if (backupSubDirExpansionFiles != null)
+                zipret += compress(new File(backupSubDirExpansionFiles, packageData.substring(packageData.lastIndexOf("/") + 1)));
+            if (zipret != 0)
                 ret += zipret;
         }
+        */
         // delete old encrypted files if encryption is not enabled
-        if(!prefs.getBoolean(Constants.PREFS_ENABLECRYPTO, false))
-            Crypto.cleanUpEncryptedFiles(backupSubDir, packageApk, packageData, backupMode, prefs.getBoolean("backupExternalFiles", false));
+        if (!prefs.getBoolean(Constants.PREFS_ENABLECRYPTO, false))
+            Crypto.cleanUpEncryptedFiles(backupSubDir, packageApk, packageData, backupMode, prefs.getBoolean("backupExternalFiles", false), prefs.getBoolean("backupExpansionFiles", false));
         return ret;
     }
-    public int doRestore(Context context, File backupSubDir, String label, String packageName, String dataDir)
-    {
-        String backupSubDirPath = swapBackupDirPath(backupSubDir.getAbsolutePath());
-        String dataDirName = dataDir.substring(dataDir.lastIndexOf("/") + 1);
-        int unzipRet = -1;
-        Log.i(TAG, "restoring: " + label);
 
-        try
-        {
-            killPackage(context, packageName);
-            File zipFile = new File(backupSubDir, dataDirName + ".zip");
-            if(zipFile.exists())
-                unzipRet = Compression.unzip(zipFile, backupSubDir);
-            if(prefs.getBoolean("backupExternalFiles", false))
-            {
-                File externalFiles = new File(backupSubDir, EXTERNAL_FILES);
-                if(externalFiles.exists())
-                {
-                    String externalFilesPath = context.getExternalFilesDir(null).getAbsolutePath();
-                    externalFilesPath = externalFilesPath.substring(0, externalFilesPath.lastIndexOf(context.getApplicationInfo().packageName));
-                    Compression.unzip(new File(externalFiles, dataDirName + ".zip"), new File(externalFilesPath));
+    private long folderSize(File directory) {
+        long length = 0;
+        for (File file : directory.listFiles()) {
+            if (length > 0) break;
+            if (file.isFile())
+                length += file.length();
+            else {
+                if (!file.getName().matches("(?i)cache|.vungle")) {
+                    length += folderSize(file);
                 }
-            }
-
-            // check if there is a directory to copy from - it is not necessarily an error if there isn't
-            String[] list = new File(backupSubDir, dataDirName).list();
-            if(list != null && list.length > 0)
-            {
-                List<String> commands = new ArrayList<>();
-                String restoreCommand = busybox + " cp -r " + backupSubDirPath + "/" + dataDirName + "/* " + dataDir + "\n";
-                if(!(new File(dataDir).exists()))
-                {
-                    restoreCommand = "mkdir " + dataDir + "\n" + restoreCommand;
-                    // restored system apps will not necessarily have the data folder (which is otherwise handled by pm)
-                }
-                commands.add(restoreCommand);
-                if(Build.VERSION.SDK_INT >= 23) {
-                    commands.add("restorecon -R " + dataDir + " || true");
-                }
-                int ret = CommandHandler.runCmd("su", commands, line -> {},
-                    line -> writeErrorLog(label, line),
-                    e -> Log.e(TAG, "doRestore: " + e.toString()), this);
-                if(multiuserEnabled)
-                {
-                    disablePackage(packageName);
-                }
-                return ret;
-            }
-            else
-            {
-                Log.i(TAG, packageName + " has empty or non-existent subdirectory: " + backupSubDir.getAbsolutePath() + "/" + dataDirName);
-                return 0;
             }
         }
-        finally
-        {
-            if(unzipRet == 0)
+        return length;
+    }
+
+    public int doRestore(Context context, File backupSubDir, String label, String packageName, String dataDir)
+    {
+        File fileDataDir = new File(dataDir);
+        String dataDirName = fileDataDir.getName();
+        Log.i(TAG, "restoring: " + label);
+
+        File zipFile = new File(backupSubDir, dataDirName + ".tar.gz");
+        if (zipFile.exists()) {
+            List<String> commands = new ArrayList<>();
+
+            killPackage(context, packageName);
+            if(prefs.getBoolean("backupExternalFiles", false))
             {
-                deleteBackup(new File(backupSubDir, dataDirName));
+                File externalFiles = new File(new File(backupSubDir, EXTERNAL_FILES), dataDirName + ".tar.gz");
+                if (externalFiles.exists()) {
+                    String externalFilesPath = context.getExternalFilesDir(null).getParentFile().getAbsolutePath();
+                    commands.add(busybox + " tar -C " + externalFilesPath + " -xzf " + externalFiles.getAbsolutePath());
+                }
             }
+
+            if(prefs.getBoolean("backupExpansionFiles", false))
+            {
+                File expansionFiles = new File(backupSubDir, EXPANSION_FILES);
+                if(expansionFiles.exists())
+                {
+                    File expansionFilesPath = new File(context.getObbDir().getParentFile(), packageName);
+                    if (expansionFilesPath.exists() ||  expansionFilesPath.mkdir())
+                    {
+                        commands.add(busybox + " cp -R " + expansionFiles + "/* " + expansionFilesPath);
+                    }
+                }
+            }
+
+            String restoreCommand = busybox + " tar -C " + fileDataDir.getParent() + " -xzf " +
+                    zipFile.getAbsolutePath() + " --exclude='" + dataDirName +"/'";
+            if (!(fileDataDir.exists()))
+			{
+                commands.add("mkdir " + dataDir);
+                // restored system apps will not necessarily have the data folder (which is otherwise handled by pm)
+            }
+            commands.add(restoreCommand);
+            if (Build.VERSION.SDK_INT >= 23)
+                commands.add("restorecon -R " + dataDir + " || true");
+            int ret = CommandHandler.runCmd("su", commands, line -> {},
+                    line -> writeErrorLog(label, line),
+                    e -> Log.e(TAG, "doRestore: " + e.toString()), this);
+            if (multiuserEnabled)
+			{
+                disablePackage(packageName);
+            }
+            return ret;
+        }
+		else
+		{
+            Log.i(TAG, packageName + " has empty or non-existent backup: " + backupSubDir.getAbsolutePath() + "/" + dataDirName);
+            return 0;
         }
     }
     public int backupSpecial(File backupSubDir, String label, String... files)
@@ -405,10 +472,9 @@ public class ShellCommands implements CommandHandler.UnexpectedExceptionListener
             List<String> commands = new ArrayList<>();
             if(Build.VERSION.SDK_INT < 23) {
                 commands.add("for dir in " + packageDir + "/*; do if " +
-                busybox + " test `" + busybox +
-                " basename $dir` != \"lib\"; then " + busybox +
-                " chown -R " + ownership.toString() +
-                " $dir; " + busybox + " chmod -R 771 $dir; fi; done");
+                    "[[ \"`" + busybox + " basename $dir`\" != @(lib|cache) ]]; then " +
+                    busybox + " chown -R " + ownership.toString() + " $dir; " +
+                    "fi; done");
             } else {
                 if(!legacyMode) {
                     commands.add(String.format("%s change-owner -r %s %s",
@@ -446,11 +512,11 @@ public class ShellCommands implements CommandHandler.UnexpectedExceptionListener
         if(backupDir.getAbsolutePath().startsWith(ownDataDir))
         {
             /**
-                * pm cannot install from a file on the data partition
-                * Failure [INSTALL_FAILED_INVALID_URI] is reported
-                * therefore, if the backup directory is oab's own data
-                * directory a temporary directory on the external storage
-                * is created where the apk is then copied to.
+            * pm cannot install from a file on the data partition
+            * Failure [INSTALL_FAILED_INVALID_URI] is reported
+            * therefore, if the backup directory is oab's own data
+            * directory a temporary directory on the external storage
+            * is created where the apk is then copied to.
             */
             String tempPath = android.os.Environment.getExternalStorageDirectory() + "/apkTmp" + System.currentTimeMillis();
             commands.add(busybox + " mkdir " + swapBackupDirPath(tempPath));
@@ -460,7 +526,12 @@ public class ShellCommands implements CommandHandler.UnexpectedExceptionListener
             commands.add("pm install -r " + tempPath + "/" + apk);
             commands.add(busybox + " rm -r " + swapBackupDirPath(tempPath));
         } else {
-            commands.add("pm install -r " + backupDir.getAbsolutePath() + "/" + apk);
+            //commands.add("pm install -r " + backupDir.getAbsolutePath() + "/" + apk);
+            String tmpDir = "/data/local/tmp";
+            String tmpApk = tmpDir + "/base.apk";
+            commands.add(busybox + " tar -C " + tmpDir + " -xzf " + backupDir.getAbsolutePath() + "/" + apk +
+                " && pm install -r " + tmpApk);
+            commands.add("rm -f " + tmpApk);
         }
         List<String> err = new ArrayList<>();
         int ret = CommandHandler.runCmd("su", commands, line -> {},
@@ -530,13 +601,14 @@ public class ShellCommands implements CommandHandler.UnexpectedExceptionListener
         if(!isSystem)
         {
             commands.add("pm uninstall " + packageName);
-            commands.add(busybox + " rm -r /data/lib/" + packageName + "/*");
+            //commands.add(busybox + " rm -r /data/lib/" + packageName + "/*");
             // pm uninstall sletter ikke altid mapper og lib-filer ordentligt.
             // indføre tjek på pm uninstalls return
         }
         else
         {
             // it seems that busybox mount sometimes fails silently so use toolbox instead
+            /*
             commands.add("mount -o remount,rw /system");
             commands.add(busybox + " rm " + sourceDir);
             if(Build.VERSION.SDK_INT >= 21)
@@ -548,6 +620,7 @@ public class ShellCommands implements CommandHandler.UnexpectedExceptionListener
             commands.add("mount -o remount,ro /system");
             commands.add(busybox + " rm -r " + dataDir);
             commands.add(busybox + " rm -r /data/app-lib/" + packageName + "*");
+            */
         }
         List<String> err = new ArrayList<>();
         int ret = CommandHandler.runCmd("su", commands, line -> {},
@@ -640,8 +713,8 @@ public class ShellCommands implements CommandHandler.UnexpectedExceptionListener
     {
         errors += packageName + ": " + err + "\n";
         Date date = new Date();
-        SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy/MM/dd - HH:mm:ss");
-        String dateFormated = dateFormat.format(date);
+        @SuppressLint("SimpleDateFormat") SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy/MM/dd - HH:mm:ss");
+        String dateFormatted = dateFormat.format(date);
         try
         {
             File outFile = new FileCreationHelper().createLogFile(FileCreationHelper.getDefaultLogFilePath());
@@ -650,7 +723,7 @@ public class ShellCommands implements CommandHandler.UnexpectedExceptionListener
                 try(FileWriter fw = new FileWriter(outFile.getAbsoluteFile(),
                         true);
                         BufferedWriter bw = new BufferedWriter(fw)) {
-                    bw.write(dateFormated + ": " + err + " [" + packageName + "]\n");
+                    bw.write(dateFormatted + ": " + err + " [" + packageName + "]\n");
                 }
             }
         }
@@ -669,26 +742,7 @@ public class ShellCommands implements CommandHandler.UnexpectedExceptionListener
     }
     public static boolean checkSuperUser()
     {
-        try
-        {
-            Process p = Runtime.getRuntime().exec("su");
-            DataOutputStream dos = new DataOutputStream(p.getOutputStream());
-            dos.writeBytes("exit\n");
-            dos.flush();
-            p.waitFor();
-            if(p.exitValue() == 0)
-                return true;
-        }
-        catch(IOException e)
-        {
-            Log.e(TAG, "checkSuperUser: " + e.toString());
-        }
-        catch(InterruptedException e)
-        {
-            Log.e(TAG, "checkSuperUser: " + e.toString());
-            Thread.currentThread().interrupt();
-        }
-        return false;
+            return Shell.rootAccess();
     }
     public boolean checkBusybox() {
         return checkBusybox(busybox);
@@ -885,27 +939,28 @@ public class ShellCommands implements CommandHandler.UnexpectedExceptionListener
         {
             String parent = backupSubDir.getParent() + "/" + TAG + ".apk";
             String apkPath = backupSubDir.getAbsolutePath() + "/" + new File(apk).getName();
-            if(parent != null)
-            {
-                List<String> commands = new ArrayList<>();
-                commands.add(busybox + " cp " + apkPath + " " + parent);
-                CommandHandler.runCmd("sh", commands, line -> {},
-                    line -> writeErrorLog("", line),
-                    e -> Log.e(TAG, "copySelfApk: ", e), this);
-            }
+            List<String> commands = new ArrayList<>();
+            commands.add(busybox + " cp " + apkPath + " " + parent);
+            CommandHandler.runCmd("sh", commands, line -> {},
+                line -> writeErrorLog("", line),
+                e -> Log.e(TAG, "copySelfApk: ", e), this);
         }
     }
     public File getExternalFilesDirPath(Context context, String packageData)
     {
-        if(Build.VERSION.SDK_INT >= 8)
-        {
-            String externalFilesPath = context.getExternalFilesDir(null).getAbsolutePath();
-            // get path of own externalfilesdir and then cutting at the packagename to get the general path
-            externalFilesPath = externalFilesPath.substring(0, externalFilesPath.lastIndexOf(context.getApplicationInfo().packageName));
-            File externalFilesDir = new File(externalFilesPath, new File(packageData).getName());
-            if(externalFilesDir.exists())
-                return externalFilesDir;
-        }
+        String externalFilesPath = context.getExternalFilesDir(null).getParentFile().getAbsolutePath();
+        File externalFilesDir = new File(externalFilesPath, new File(packageData).getName());
+        if(externalFilesDir.exists())
+            return externalFilesDir;
+        return null;
+    }
+
+    public File getExpansionDirectoryPath(Context context, String packageData)
+    {
+        String expansionFilesPath = context.getObbDir().getParentFile().getAbsolutePath();
+        File expansionFilesDir = new File(expansionFilesPath, new File(packageData).getName());
+        if(expansionFilesDir.exists())
+            return expansionFilesDir;
         return null;
     }
 

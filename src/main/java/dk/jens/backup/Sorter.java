@@ -13,11 +13,13 @@ public class Sorter
     SortingMethod sortingMethod = SortingMethod.PACKAGENAME;
     // SparseIntArray is more memory efficient than mapping integers to integers using a hashmap
     private static final SparseIntArray convertFilteringIdMap, convertSortingIdMap;
+    SharedPreferences prefs;
     SharedPreferences.Editor prefsEdit;
     int oldBackups = 0;
     public Sorter(AppInfoAdapter adapter, SharedPreferences prefs)
     {
         this.adapter = adapter;
+        this.prefs = prefs;
         this.prefsEdit = prefs.edit();
         try
         {
@@ -51,6 +53,7 @@ public class Sorter
         OLDBACKUPS(R.id.showOldBackups),
         ONLYAPK(R.id.showOnlyApkBackedUp),
         ONLYDATA(R.id.showOnlyDataBackedUp),
+        APKDATA(R.id.showAPKnDataBackedUp),
         ONLYSPECIAL(R.id.showOnlySpecialBackups);
         int id;
         FilteringMethod(int id)
@@ -102,7 +105,7 @@ public class Sorter
                 break;
             case R.id.showNotBackedup:
                 filteringMethod = FilteringMethod.NOTBACKEDUP;
-                adapter.filterIsBackedup();
+                adapter.filterIsNotBackedup(prefs.getInt("filteringId", 0));
                 break;
             case R.id.showNotInstalled:
                 filteringMethod = FilteringMethod.NOTINSTALLED;
@@ -123,6 +126,10 @@ public class Sorter
             case R.id.showOnlyDataBackedUp:
                 filteringMethod = FilteringMethod.ONLYDATA;
                 adapter.filterPartialBackups(AppInfo.MODE_DATA);
+                break;
+            case R.id.showAPKnDataBackedUp:
+                filteringMethod = FilteringMethod.APKDATA;
+                adapter.filterPartialBackups(AppInfo.MODE_BOTH);
                 break;
             case R.id.showOnlySpecialBackups:
                 filteringMethod = FilteringMethod.ONLYSPECIAL;

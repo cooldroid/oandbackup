@@ -41,8 +41,13 @@ public class BackupRestoreHelper
         }
         else
         {
-            ret = shellCommands.doBackup(context, backupSubDir, appInfo.getLabel(), appInfo.getDataDir(), appInfo.getSourceDir(), backupMode);
-            appInfo.setBackupMode(backupMode);
+            if (appInfo.isSystem()) {
+                ret = shellCommands.doBackup(context, backupSubDir, appInfo.getLabel(), appInfo.getDataDir(), "", backupMode);
+                appInfo.setBackupMode(AppInfo.MODE_DATA);
+            } else {
+                ret = shellCommands.doBackup(context, backupSubDir, appInfo.getLabel(), appInfo.getDataDir(), appInfo.getSourceDir(), backupMode);
+                appInfo.setBackupMode(backupMode);
+            }
         }
 
         shellCommands.logReturnMessage(context, ret);
@@ -64,17 +69,17 @@ public class BackupRestoreHelper
             if(apk != null && apk.length() > 0)
             {
                 if(appInfo.isSystem()) {
-                    apkRet = shellCommands.restoreSystemApk(backupSubDir,
-                        appInfo.getLabel(), apk);
+                    //apkRet = shellCommands.restoreSystemApk(backupSubDir,
+                    //    appInfo.getLabel(), apk);
                 } else {
                     apkRet = shellCommands.restoreUserApk(backupSubDir,
                         appInfo.getLabel(), apk, context.getApplicationInfo().dataDir);
                 }
-                if(appInfo.isSystem() && appInfo.getLogInfo() != null)
-                {
-                    File apkFile = new File(backupDir, appInfo.getPackageName() + "/" + appInfo.getLogInfo().getApk());
-                    shellCommands.copyNativeLibraries(apkFile, backupSubDir, appInfo.getPackageName());
-                }
+                //if(appInfo.isSystem() && appInfo.getLogInfo() != null)
+                //{
+                //    File apkFile = new File(backupDir, appInfo.getPackageName() + "/" + appInfo.getLogInfo().getApk());
+                //    shellCommands.copyNativeLibraries(apkFile, backupSubDir, appInfo.getPackageName());
+                //}
             }
             else if(!appInfo.isSpecial())
             {

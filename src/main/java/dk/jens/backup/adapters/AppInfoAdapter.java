@@ -55,10 +55,7 @@ public class AppInfoAdapter extends ArrayAdapter<AppInfo>
     }
     public void addAll(ArrayList<AppInfo> list)
     {
-        for(AppInfo appInfo : list)
-        {
-            items.add(appInfo);
-        }
+        items.addAll(list);
     }
     public AppInfo getItem(int pos)
     {
@@ -148,6 +145,9 @@ public class AppInfoAdapter extends ArrayAdapter<AppInfo>
                     break;
                 case AppInfo.MODE_DATA:
                     viewHolder.backupMode.setText(R.string.onlyDataBackedUp);
+                    break;
+                case AppInfo.MODE_BOTH:
+                    viewHolder.backupMode.setText(R.string.apkDataBackedUp);
                     break;
                 default:
                     viewHolder.backupMode.setText("");
@@ -301,16 +301,20 @@ public class AppInfoAdapter extends ArrayAdapter<AppInfo>
         }
         notifyDataSetChanged();
     }
-    public void filterIsBackedup()
+    public void filterIsNotBackedup(int filteringId)
     {
         items.clear();
+        boolean isSystemFilter = (filteringId == 2);
         for(AppInfo appInfo : originalValues)
         {
             if(appInfo.getLogInfo() == null)
             {
-                if(appInfo.isInstalled())
+                if (filteringId == 0 || !appInfo.isSystem() == isSystemFilter)
                 {
-                    add(appInfo);
+                    if (appInfo.isInstalled())
+                    {
+                        add(appInfo);
+                    }
                 }
             }
         }
@@ -333,7 +337,7 @@ public class AppInfoAdapter extends ArrayAdapter<AppInfo>
         items.clear();
         for(AppInfo appInfo : originalValues)
         {
-            if(appInfo.getLogInfo() == null || (appInfo.getLogInfo().getVersionCode() != 0 && appInfo.getVersionCode() > appInfo.getLogInfo().getVersionCode()))
+            if(appInfo.getLogInfo() != null && (appInfo.getLogInfo().getVersionCode() != 0 && appInfo.getVersionCode() > appInfo.getLogInfo().getVersionCode()))
             {
                 add(appInfo);
             }

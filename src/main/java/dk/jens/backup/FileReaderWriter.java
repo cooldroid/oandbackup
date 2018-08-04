@@ -40,9 +40,7 @@ public class FileReaderWriter
     }
     public String read()
     {
-        BufferedReader reader = null;
-        try(FileReader fr = new FileReader(file)) {
-            reader = new BufferedReader(fr);
+        try(FileReader fr = new FileReader(file); BufferedReader reader = new BufferedReader(fr)) {
             StringBuilder sb = new StringBuilder();
             String line;
             while((line = reader.readLine()) != null)
@@ -59,20 +57,6 @@ public class FileReaderWriter
         {
             Log.i(TAG, e.toString());
             return e.toString();
-        }
-        finally
-        {
-            try
-            {
-                if(reader != null)
-                {
-                    reader.close();
-                }
-            }
-            catch(IOException e)
-            {
-                Log.e(TAG, "error closing reader: " + e.toString());
-            }
         }
     }
     public boolean contains(String string)

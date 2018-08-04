@@ -14,9 +14,11 @@
     <string name="de_selectAll">de/select all</string>
     <string name="onlyApkBackedUp">only apk</string>
     <string name="onlyDataBackedUp">only data</string>
+    <string name="apkDataBackedUp">apk + data</string>
     <string name="refresh">refresh</string>
     <string name="batchbackup">batch backup</string>
     <string name="batchrestore">batch restore</string>
+    <string name="batch_uninstall">batch uninstall</string>
     <string name="search">search</string>
     <string name="searchHint">search for apps</string>
     <string name="deleteBackup">delete backup</string>
@@ -31,6 +33,7 @@
     <string name="showOldBackups">show old backups</string>
     <string name="showOnlyApkBackedUp">show apps with only apk backed up</string>
     <string name="showOnlyDataBackedUp">show apps with only data backed up</string>
+    <string name="showAPKnDataBackedUp">show apps with apk + data backed up</string>
     <string name="showOnlySpecialBackups">show only special backups</string>
     <string name="sortByLabel">sort by label</string>
     <string name="sortByPackageName">sort by packagename</string>
@@ -61,14 +64,14 @@
     <string name="shellReturnError">error</string>
     <string name="backupProgress">backing up</string>
     <string name="backupSuccess">backup complete</string>
-    <string name="backupFailure">error on backup</string>
+    <string name="backupFailure">error while backup</string>
     <string name="restoreProgress">restoring</string>
     <string name="restoreSuccess">restore complete</string>
-    <string name="restoreFailure">error on restore</string>
+    <string name="restoreFailure">error while restore</string>
     <string name="batchSuccess">operation complete</string>
-    <string name="batchFailure">complete with errors</string>
+    <string name="batchFailure">completed with errors</string>
     <string name="uninstallSuccess">uninstall complete</string>
-    <string name="uninstallFailure">error on uninstall</string>
+    <string name="uninstallFailure">error while uninstall</string>
     <string name="errorDialogTitle">errors occurred</string>
     <string name="customListTitle">custom list</string>
     <string name="quickReboot">quick reboot</string>
@@ -95,7 +98,7 @@
     <string name="prefs_title">preferences</string>
     <string name="prefs_timestamp">use local date format</string>
     <string name="prefs_acquireWakelock">prevent sleep</string>
-    <string name="prefs_summaryAcquireWakelock">acquire a wakelock while batch operations are running to prevent sleep. will speed up backups and restores considerably but will consume more energy</string>
+    <string name="prefs_summaryAcquireWakelock">acquire a wakelock while batch operations are running to prevent sleep. It will speed up backups and restores considerably but will consume more battery.</string>
     <string name="prefs_pathscategory">custom paths</string>
     <string name="prefs_pathBackupFolder">backup folder</string>
     <string name="prefs_summaryBackupFolder">path to backup folder. leave blank for default.</string>
@@ -117,6 +120,8 @@
     <string name="prefs_enableSpecialBackups">enable special backups</string>
     <string name="prefs_backupExternalFiles">handle external data</string>
     <string name="prefs_summaryBackupExternalFiles">backs up and restores data that is placed on the external storage (e.g. /sdcard/Android/data/)</string>
+    <string name="prefs_backupExpansionFiles">handle expansion data</string>
+    <string name="prefs_summaryBackupExpansionFiles">backs up and restores expansion data (e.g. /sdcard/Android/obb/)</string>
     <string name="prefs_cryptoMenu">cryptography</string>
     <string name="prefs_enableCrypto">enable</string>
     <string name="prefs_summaryEnableCrypto">enable encryption when backing up files and decryption when restoring</string>

@@ -40,34 +40,26 @@ public class BackupRestoreDialogFragment extends DialogFragment
 
         if(appInfo.isInstalled())
         {
-            builder.setPositiveButton(R.string.backup, new DialogInterface.OnClickListener()
-            {
-                public void onClick(DialogInterface dialog, int id)
-                {
-                    arguments.putSerializable(Constants.BUNDLE_ACTIONTYPE,
-                        BackupRestoreHelper.ActionType.BACKUP);
-                    BackupRestoreOptionsDialogFragment backupDialog = new BackupRestoreOptionsDialogFragment();
-                    backupDialog.setArguments(arguments);
-                    for(ActionListener listener : listeners)
-                        backupDialog.setListener(listener);
-                    backupDialog.show(getFragmentManager(), "backupDialog");
-                }
+            builder.setPositiveButton(R.string.backup, (dialog, id) -> {
+                arguments.putSerializable(Constants.BUNDLE_ACTIONTYPE,
+                    BackupRestoreHelper.ActionType.BACKUP);
+                BackupRestoreOptionsDialogFragment backupDialog = new BackupRestoreOptionsDialogFragment();
+                backupDialog.setArguments(arguments);
+                for(ActionListener listener : listeners)
+                    backupDialog.setListener(listener);
+                backupDialog.show(getFragmentManager(), "backupDialog");
             });
         }
         if(appInfo.getLogInfo() != null)
         {
-            builder.setNegativeButton(R.string.restore, new DialogInterface.OnClickListener()
-            {
-                public void onClick(DialogInterface dialog, int id)
-                {
-                    arguments.putSerializable(Constants.BUNDLE_ACTIONTYPE,
-                        BackupRestoreHelper.ActionType.RESTORE);
-                    BackupRestoreOptionsDialogFragment restoreDialog = new BackupRestoreOptionsDialogFragment();
-                    restoreDialog.setArguments(arguments);
-                    for(ActionListener listener : listeners)
-                        restoreDialog.setListener(listener);
-                    restoreDialog.show(getFragmentManager(), "restoreDialog");
-                }
+            builder.setNegativeButton(R.string.restore, (dialog, id) -> {
+                arguments.putSerializable(Constants.BUNDLE_ACTIONTYPE,
+                    BackupRestoreHelper.ActionType.RESTORE);
+                BackupRestoreOptionsDialogFragment restoreDialog = new BackupRestoreOptionsDialogFragment();
+                restoreDialog.setArguments(arguments);
+                for(ActionListener listener : listeners)
+                    restoreDialog.setListener(listener);
+                restoreDialog.show(getFragmentManager(), "restoreDialog");
             });
         }
         return builder.create();

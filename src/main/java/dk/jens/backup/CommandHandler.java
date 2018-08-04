@@ -1,12 +1,16 @@
 package dk.jens.backup;
 
+import android.text.TextUtils;
 import android.util.Log;
+
+import com.topjohnwu.superuser.Shell;
 
 import java.io.BufferedReader;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
@@ -19,29 +23,40 @@ public class CommandHandler {
             errorHandler.accept("no commands to run");
             return 1;
         }
-        try {
-            Process p = Runtime.getRuntime().exec(shell);
-            DataOutputStream dos = new DataOutputStream(p.getOutputStream());
-            for (String cmd : commands) {
-                dos.writeBytes(cmd + "\n");
+
+        List<String> stdout = new ArrayList<>();
+        List<String> stderr = new ArrayList<>();
+        // Run commands and get output immediately
+        int code = 1;
+        if (shell.equals("su")) {
+            try {
+                code = Shell.su(commands.toArray(new String[0])).to(stdout, stderr).exec().getCode();
+            } catch (Exception e) {
+                exceptionListener.onUnexpectedException(e);
             }
-            dos.writeBytes("exit\n");
-            dos.flush();
-            OutputHandler stdoutHandler = new OutputHandler(p.getInputStream(),
-                outHandler, exceptionListener);
-            OutputHandler stderrHandler = new OutputHandler(p.getErrorStream(),
-                errorHandler, exceptionListener);
-            stdoutHandler.start();
-            stderrHandler.start();
-            return p.waitFor();
-        } catch(IOException e) {
-            exceptionHandler.accept(e);
-            return 1;
-        } catch(InterruptedException e) {
-            exceptionHandler.accept(e);
-            Thread.currentThread().interrupt();
-            return 1;
+        } else {
+            try {
+                code = Shell.sh(commands.toArray(new String[0])).to(stdout, stderr).exec().getCode();
+            } catch (Exception e) {
+                exceptionListener.onUnexpectedException(e);
+            }
         }
+
+        for (String line: stdout) {
+            outHandler.accept(line);
+        }
+
+        for (String line: stderr) {
+            errorHandler.accept(line);
+        }
+
+        if (!(code == 0 || code == 127)) {
+            Exception t = new Exception(TextUtils.join("\n ", stderr));
+            exceptionHandler.accept(t);
+            code = 1;
+        }
+
+        return code;
     }
 
     public static int runCmd(String shell, String command,
@@ -64,30 +79,4 @@ public class CommandHandler {
         void onUnexpectedException(Throwable t);
     }
 
-    private static class OutputHandler extends Thread {
-        private InputStream is;
-        private OutputConsumer errorHandler;
-        private UnexpectedExceptionListener exceptionListener;
-
-        private OutputHandler(InputStream is, OutputConsumer errorHandler,
-                UnexpectedExceptionListener exceptionListener) {
-            this.is = is;
-            this.errorHandler = errorHandler;
-            this.exceptionListener = exceptionListener;
-        }
-
-        @Override
-        public void run() {
-            try {
-                InputStreamReader isr = new InputStreamReader(is);
-                BufferedReader br = new BufferedReader(isr);
-                String line;
-                while ((line = br.readLine()) != null) {
-                    errorHandler.accept(line);
-                }
-            } catch(IOException e) {
-                exceptionListener.onUnexpectedException(e);
-            }
-        }
-    }
 }

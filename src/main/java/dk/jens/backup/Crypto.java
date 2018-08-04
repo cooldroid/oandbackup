@@ -116,7 +116,7 @@ public class Crypto
                 for(i = 0; i < list.length; i++)
                 {
                     String file = Utils.getName(list[i]);
-                    File f = new File(backupSubDir, file + ".zip.gpg");
+                    File f = new File(backupSubDir, file + ".tar.gz.gpg");
                     if(f.exists())
                         files[i] = f;
                     else
@@ -126,7 +126,7 @@ public class Crypto
             else
             {
                 int i = 0;
-                files = new File[3];
+                files = new File[4];
                 if(mode == AppInfo.MODE_APK || mode == AppInfo.MODE_BOTH)
                 {
                     String apk = log.getApk();
@@ -138,12 +138,16 @@ public class Crypto
                 {
                     String data = log.getDataDir();
                     data = data.substring(data.lastIndexOf("/") + 1);
-                    File dataFile = new File(backupSubDir, data + ".zip.gpg");
+                    File dataFile = new File(backupSubDir, data + ".tar.gz.gpg");
                     if(dataFile.exists())
                         files[i++] = dataFile;
-                    File externalFiles = new File(backupSubDir, ShellCommands.EXTERNAL_FILES + "/" + data + ".zip.gpg");
+                    File externalFiles = new File(backupSubDir, ShellCommands.EXTERNAL_FILES + "/" + data + ".tar.gz.gpg");
                     if(externalFiles.exists())
                         files[i++] = externalFiles;
+
+                    File expansionFiles = new File(backupSubDir, ShellCommands.EXPANSION_FILES + "/" + data + ".tar.gz.gpg");
+                    if(expansionFiles.exists())
+                        files[i++] = expansionFiles;
                 }
             }
             decryptFiles(context, files);
@@ -152,8 +156,7 @@ public class Crypto
     public void encryptFromAppInfo(Context context, File backupDir, AppInfo appInfo, int mode, SharedPreferences prefs)
     {
         File backupSubDir = new File(backupDir, appInfo.getPackageName());
-        String apk = appInfo.getSourceDir();
-        apk = apk.substring(apk.lastIndexOf("/") + 1);
+        String apk = appInfo.getPackageName() + ".apk.gz";
         String data = appInfo.getDataDir();
         data = data.substring(data.lastIndexOf("/") + 1);
         File[] files;
@@ -165,7 +168,7 @@ public class Crypto
             for(i = 0; i < list.length; i++)
             {
                 String file = Utils.getName(list[i]);
-                File f = new File(backupSubDir, file + ".zip");
+                File f = new File(backupSubDir, file + ".tar.gz");
                 if(f.exists())
                     files[i] = f;
                 else
@@ -175,20 +178,27 @@ public class Crypto
         else
         {
             int i = 0;
-            files = new File[3];
+            files = new File[4];
             if(mode == AppInfo.MODE_APK || mode == AppInfo.MODE_BOTH)
                 files[i++] = new File(backupSubDir, apk);
             if(mode == AppInfo.MODE_DATA || mode == AppInfo.MODE_BOTH)
             {
-                File f = new File(backupSubDir, data + ".zip");
+                File f = new File(backupSubDir, data + ".tar.gz");
                 if(f.exists())
                     files[i++] = f;
             }
             if(prefs.getBoolean("backupExternalFiles", false))
             {
-                File extFiles = new File(backupSubDir, ShellCommands.EXTERNAL_FILES  + "/" + data + ".zip");
+                File extFiles = new File(backupSubDir, ShellCommands.EXTERNAL_FILES  + "/" + data + ".tar.gz");
                 if(extFiles.exists())
                     files[i++] = extFiles;
+            }
+
+            if(prefs.getBoolean("backupExpansionFiles", false))
+            {
+                File expansionFiles = new File(backupSubDir, ShellCommands.EXPANSION_FILES  + "/" + data + ".tar.gz");
+                if(expansionFiles.exists())
+                    files[i++] = expansionFiles;
             }
         }
         encryptFiles(context, files);
@@ -391,7 +401,7 @@ public class Crypto
             for(String file : appInfo.getFilesList())
             {
                 File f1 = new File(backupSubDir, Utils.getName(file) + ".gpg");
-                File f2 = new File(backupSubDir, Utils.getName(file) + ".zip.gpg");
+                File f2 = new File(backupSubDir, Utils.getName(file) + ".tar.gz.gpg");
                 if(f1.exists() || f2.exists())
                     return true;
             }
@@ -400,7 +410,7 @@ public class Crypto
         if(log != null)
         {
             File apk = new File(backupSubDir, log.getApk() + ".gpg");
-            File data = new File(backupSubDir, log.getDataDir().substring(log.getDataDir().lastIndexOf("/") + 1) + ".zip.gpg");
+            File data = new File(backupSubDir, log.getDataDir().substring(log.getDataDir().lastIndexOf("/") + 1) + ".tar.gz.gpg");
             return (apk.exists() || data.exists());
         }
         return false;
@@ -414,8 +424,8 @@ public class Crypto
                 String filename = Utils.getName(file);
                 if(new File(backupSubDir, filename + ".gpg").exists())
                     ShellCommands.deleteBackup(new File(backupSubDir, filename));
-                else if(new File(backupSubDir, filename + ".zip.gpg").exists())
-                    ShellCommands.deleteBackup(new File(backupSubDir, filename + ".zip"));
+                else if(new File(backupSubDir, filename + ".tar.gz.gpg").exists())
+                    ShellCommands.deleteBackup(new File(backupSubDir, filename + ".tar.gz"));
             }
         }
         LogFile log = appInfo.getLogInfo();
@@ -430,24 +440,30 @@ public class Crypto
             if(mode == AppInfo.MODE_DATA || mode == AppInfo.MODE_BOTH)
             {
                 String data = log.getDataDir().substring(log.getDataDir().lastIndexOf("/") + 1);
-                if(new File(backupSubDir, data + ".zip.gpg").exists())
-                    ShellCommands.deleteBackup(new File(backupSubDir, data + ".zip"));
-                if(new File(backupSubDir, ShellCommands.EXTERNAL_FILES + "/" + data + ".zip.gpg").exists())
-                    ShellCommands.deleteBackup(new File(backupSubDir, ShellCommands.EXTERNAL_FILES + "/" + data + ".zip"));
+                if(new File(backupSubDir, data + ".tar.gz.gpg").exists())
+                    ShellCommands.deleteBackup(new File(backupSubDir, data + ".tar.gz"));
+                if(new File(backupSubDir, ShellCommands.EXTERNAL_FILES + "/" + data + ".tar.gz.gpg").exists())
+                    ShellCommands.deleteBackup(new File(backupSubDir, ShellCommands.EXTERNAL_FILES + "/" + data + ".tar.gz"));
+                if(new File(backupSubDir, ShellCommands.EXPANSION_FILES + "/" + data + ".tar.gz.gpg").exists())
+                    ShellCommands.deleteBackup(new File(backupSubDir, ShellCommands.EXPANSION_FILES + "/" + data + ".tar.gz"));
             }
         }
     }
-    public static void cleanUpEncryptedFiles(File backupSubDir, String sourceDir, String dataDir, int mode, boolean backupExternalFiles)
+    public static void cleanUpEncryptedFiles(File backupSubDir, String sourceDir, String dataDir, int mode, boolean backupExternalFiles, boolean backupExpansionFiles)
     {
         String apk = sourceDir.substring(sourceDir.lastIndexOf("/") + 1);
         String data = dataDir.substring(dataDir.lastIndexOf("/") + 1);
         if(mode == AppInfo.MODE_APK || mode == AppInfo.MODE_BOTH)
-            ShellCommands.deleteBackup(new File(backupSubDir, apk + ".gpg"));
+            ShellCommands.deleteBackup(new File(backupSubDir, apk + ".gz.gpg"));
         if(mode == AppInfo.MODE_DATA || mode == AppInfo.MODE_BOTH)
         {
-            ShellCommands.deleteBackup(new File(backupSubDir, data + ".zip.gpg"));
+            ShellCommands.deleteBackup(new File(backupSubDir, data + ".tar.gz.gpg"));
             if(backupExternalFiles)
-                ShellCommands.deleteBackup(new File(backupSubDir, ShellCommands.EXTERNAL_FILES  + "/" + data + ".zip.gpg"));
+                ShellCommands.deleteBackup(new File(backupSubDir, ShellCommands.EXTERNAL_FILES  + "/" + data + ".tar.gz.gpg"));
+
+            if(backupExpansionFiles) {
+                ShellCommands.deleteBackup(new File(backupSubDir, ShellCommands.EXPANSION_FILES + "/" + data + ".tar.gz.gpg"));
+            }
         }
     }
 }

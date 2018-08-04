@@ -1,5 +1,6 @@
 package dk.jens.backup;
 
+import android.annotation.SuppressLint;
 import android.os.Parcel;
 import android.os.Parcelable;
 import android.util.Log;
@@ -72,7 +73,7 @@ public class LogFile implements Parcelable
     public String getApk()
     {
         if(sourceDir != null && sourceDir.length() > 0)
-            return sourceDir.substring(sourceDir.lastIndexOf("/") + 1);
+            return getPackageName() + ".apk.gz";
         return null;
     }
     public String getDataDir()
@@ -102,7 +103,6 @@ public class LogFile implements Parcelable
     }
     public static void writeLogFile(File backupSubDir, AppInfo appInfo, int backupMode, boolean encrypted)
     {
-        BufferedWriter bw = null;
         try
         {
             // path to apk should only be logged if it is backed up
@@ -127,8 +127,7 @@ public class LogFile implements Parcelable
             String json = jsonObject.toString(4);
             File outFile = new File(backupSubDir, appInfo.getPackageName() + ".log");
             outFile.createNewFile();
-            try(FileWriter fw = new FileWriter(outFile.getAbsoluteFile())) {
-                bw = new BufferedWriter(fw);
+            try(FileWriter fw = new FileWriter(outFile.getAbsoluteFile()); BufferedWriter bw = new BufferedWriter(fw)) {
                 bw.write(json + "\n");
             }
         }
@@ -139,18 +138,6 @@ public class LogFile implements Parcelable
         catch(IOException e)
         {
             Log.e(TAG, "LogFile.writeLogFile: " + e.toString());
-        }
-        finally
-        {
-            try
-            {
-                if(bw != null)
-                    bw.close();
-            }
-            catch(IOException e)
-            {
-                Log.e(TAG, "LogFile.writeLogFile: " + e.toString());
-            }
         }
     }
     public static String formatDate(Date date, boolean localTimestampFormat)
@@ -163,7 +150,7 @@ public class LogFile implements Parcelable
         }
         else
         {
-            SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy/MM/dd - HH:mm:ss");
+            @SuppressLint("SimpleDateFormat") SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy/MM/dd - HH:mm:ss");
             dateFormated = dateFormat.format(date);
         }
         return dateFormated;

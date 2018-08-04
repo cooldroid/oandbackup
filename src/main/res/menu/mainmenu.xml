@@ -8,6 +8,8 @@
         android:title="@string/batchbackup" />
     <item android:id="@+id/batchrestore"
         android:title="@string/batchrestore" />
+    <item android:id="@+id/batchuninstall"
+        android:title="@string/batch_uninstall" />
     <item android:id="@+id/search"
         android:title="@string/search"
         android:icon="@drawable/ic_search_category_default"
@@ -40,6 +42,8 @@
                 android:title="@string/showOnlyApkBackedUp" />
             <item android:id="@+id/showOnlyDataBackedUp"
                 android:title="@string/showOnlyDataBackedUp" />
+            <item android:id="@+id/showAPKnDataBackedUp"
+                android:title="@string/showAPKnDataBackedUp" />
             <item android:id="@+id/showOnlySpecialBackups"
                 android:title="@string/showOnlySpecialBackups" />
             <group android:id="@+id/sortGroup"

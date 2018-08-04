@@ -19,11 +19,11 @@ function build {
 	set -x
 	cargo test
 	cargo build $cargo_options --target armv7-linux-androideabi
-	mkdir -p ../assets
-	cp -v target/armv7-linux-androideabi/release/oab-utils ../assets
+	mkdir -p ../src/main/assets
+	cp -v target/armv7-linux-androideabi/release/oab-utils ../src/main/assets
 
 	cd ../
-	./gradlew $gradle_mode
+	grad $gradle_mode
 	set +x
 }
 
