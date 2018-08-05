@@ -3,12 +3,13 @@ package dk.jens.backup.ui.dialogs;
 import android.app.AlertDialog;
 import android.app.Dialog;
 import android.app.DialogFragment;
-import android.content.DialogInterface;
+import android.content.Context;
 import android.os.Bundle;
-import dk.jens.backup.HandleShares;
-import dk.jens.backup.R;
 
 import java.io.File;
+
+import dk.jens.backup.HandleShares;
+import dk.jens.backup.R;
 
 public class ShareDialogFragment extends DialogFragment
 {
@@ -24,35 +25,25 @@ public class ShareDialogFragment extends DialogFragment
         AlertDialog.Builder builder = new AlertDialog.Builder(getActivity());
         builder.setTitle(label);
         builder.setMessage(R.string.shareTitle);
+        Context context = getActivity().getApplicationContext();
+
         if(arguments.containsKey("apk"))
         {
-            builder.setNegativeButton(R.string.radioApk, new DialogInterface.OnClickListener()
-            {
-                public void onClick(DialogInterface dialog, int id)
-                {
-                    startActivity(HandleShares.constructIntentSingle(getString(R.string.shareTitle), (File) arguments.get("apk")));
-                }
-            });
+            builder.setNegativeButton(R.string.radioApk, (dialog, id) ->
+                    startActivity(HandleShares.constructIntentSingle(context,
+                            getString(R.string.shareTitle), (File) arguments.get("apk"))));
         }
         if(arguments.containsKey("data"))
         {
-            builder.setNeutralButton(R.string.radioData, new DialogInterface.OnClickListener()
-            {
-                public void onClick(DialogInterface dialog, int id)
-                {
-                    startActivity(HandleShares.constructIntentSingle(getString(R.string.shareTitle), (File) arguments.get("data")));
-                }
-            });
+            builder.setNeutralButton(R.string.radioData, (dialog, id) ->
+                    startActivity(HandleShares.constructIntentSingle(context,
+                            getString(R.string.shareTitle), (File) arguments.get("data"))));
         }
         if(arguments.containsKey("apk") && arguments.containsKey("data"))
         {
-            builder.setPositiveButton(R.string.radioBoth, new DialogInterface.OnClickListener()
-            {
-                public void onClick(DialogInterface dialog, int id)
-                {
-                    startActivity(HandleShares.constructIntentMultiple(getString(R.string.shareTitle), (File) arguments.get("apk"), (File) arguments.get("data")));
-                }
-            });
+            builder.setPositiveButton(R.string.radioBoth, (dialog, id) ->
+                    startActivity(HandleShares.constructIntentMultiple(context,
+                            getString(R.string.shareTitle), (File) arguments.get("apk"), (File) arguments.get("data"))));
         }
         return builder.create();
     }
