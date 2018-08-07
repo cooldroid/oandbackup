@@ -113,8 +113,8 @@ public class ShellCommands implements CommandHandler.UnexpectedExceptionListener
         File apkFile = new File(packageApk);
         //String backupAPKCommand = packageApk.isEmpty() ? "" : "cp " + packageApk + " " + backupSubDirPath;
         String backupAPKCommand = packageApk.isEmpty() ? "" :
-                busybox + " tar -czf " + backupSubDirPath + "/" + folder + ".apk.gz " +
-                "-C " + apkFile.getParent() + " " + apkFile.getName();
+                //busybox + " tar -czf " + backupSubDirPath + "/" + folder + ".apk.gz " + "-C " + apkFile.getParent() + " " + apkFile.getName();
+                busybox + " gzip -ck " + apkFile.getAbsolutePath() + " > " + backupSubDirPath + "/" + folder + ".apk.gz ";
         String[] excludeFolders = new String[] {"lib", "cache", "app_webview", "app_textures", "code_cache"};
         StringBuilder excludes = new StringBuilder();
         for (String exclFolder: excludeFolders) {
@@ -529,8 +529,8 @@ public class ShellCommands implements CommandHandler.UnexpectedExceptionListener
             //commands.add("pm install -r " + backupDir.getAbsolutePath() + "/" + apk);
             String tmpDir = "/data/local/tmp";
             String tmpApk = tmpDir + "/base.apk";
-            commands.add(busybox + " tar -C " + tmpDir + " -xzf " + backupDir.getAbsolutePath() + "/" + apk +
-                " && pm install -r " + tmpApk);
+            //commands.add(busybox + " tar -C " + tmpDir + " -xzf " + backupDir.getAbsolutePath() + "/" + apk + " && pm install -r " + tmpApk);
+            commands.add(busybox + " gzip -dc " + backupDir.getAbsolutePath() + "/" + apk + " > " + tmpApk + " && pm install -r " + tmpApk);
             commands.add("rm -f " + tmpApk);
         }
         List<String> err = new ArrayList<>();

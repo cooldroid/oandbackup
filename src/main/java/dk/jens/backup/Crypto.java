@@ -313,7 +313,7 @@ public class Crypto
         try
         {
             int i = 0;
-            while(successFlag == false && errorFlag == false)
+            while(!(successFlag || errorFlag))
             {
                 if(i % 200 == 0)
                     Log.i(TAG, "waiting for openpgp-api user interaction");
@@ -451,8 +451,8 @@ public class Crypto
     }
     public static void cleanUpEncryptedFiles(File backupSubDir, String sourceDir, String dataDir, int mode, boolean backupExternalFiles, boolean backupExpansionFiles)
     {
-        String apk = sourceDir.substring(sourceDir.lastIndexOf("/") + 1);
         String data = dataDir.substring(dataDir.lastIndexOf("/") + 1);
+        String apk = data + ".apk";
         if(mode == AppInfo.MODE_APK || mode == AppInfo.MODE_BOTH)
             ShellCommands.deleteBackup(new File(backupSubDir, apk + ".gz.gpg"));
         if(mode == AppInfo.MODE_DATA || mode == AppInfo.MODE_BOTH)

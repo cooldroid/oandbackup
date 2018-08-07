@@ -15,20 +15,16 @@ public class Utils
 {
     public static void showErrors(final Activity activity)
     {
-        activity.runOnUiThread(new Runnable()
-        {
-            public void run()
+        activity.runOnUiThread(() -> {
+            String errors = ShellCommands.getErrors();
+            if(errors.length() > 0)
             {
-                String errors = ShellCommands.getErrors();
-                if(errors.length() > 0)
-                {
-                    new AlertDialog.Builder(activity)
-                    .setTitle(R.string.errorDialogTitle)
-                    .setMessage(errors)
-                    .setPositiveButton(R.string.dialogOK, null)
-                    .show();
-                    ShellCommands.clearErrors();
-                }
+                new AlertDialog.Builder(activity)
+                .setTitle(R.string.errorDialogTitle)
+                .setMessage(errors)
+                .setPositiveButton(R.string.dialogOK, null)
+                .show();
+                ShellCommands.clearErrors();
             }
         });
     }
@@ -41,13 +37,7 @@ public class Utils
             backupDir = fileCreator.createBackupFolder(path);
             if(fileCreator.isFallenBack())
             {
-                activity.runOnUiThread(new Runnable()
-                {
-                    public void run()
-                    {
-                        Toast.makeText(activity, activity.getString(R.string.mkfileError) + " " + path + " - " + activity.getString(R.string.fallbackToDefault) + ": " + FileCreationHelper.getDefaultBackupDirPath(), Toast.LENGTH_LONG).show();
-                    }
-                });
+                activity.runOnUiThread(() -> Toast.makeText(activity, activity.getString(R.string.mkfileError) + " " + path + " - " + activity.getString(R.string.fallbackToDefault) + ": " + FileCreationHelper.getDefaultBackupDirPath(), Toast.LENGTH_LONG).show());
             }
         }
         else
@@ -62,32 +52,20 @@ public class Utils
     }
     public static void showWarning(final Activity activity, final String title, final String message)
     {
-        activity.runOnUiThread(new Runnable()
-        {
-            public void run()
-            {
-                new AlertDialog.Builder(activity)
-                    .setTitle(title)
-                    .setMessage(message)
-                    .setNeutralButton(R.string.dialogOK, new DialogInterface.OnClickListener() {
-                        public void onClick(DialogInterface dialog, int id){}})
-                    .setCancelable(false)
-                    .show();
-            }
-        });
+        activity.runOnUiThread(() -> new AlertDialog.Builder(activity)
+            .setTitle(title)
+            .setMessage(message)
+            .setNeutralButton(R.string.dialogOK, (dialog, id) -> {})
+            .setCancelable(false)
+            .show());
     }
     public static void showConfirmDialog(Activity activity, String title, String message, final Command confirmCommand)
     {
         new AlertDialog.Builder(activity)
             .setTitle(title)
             .setMessage(message)
-            .setPositiveButton(R.string.dialogOK, new DialogInterface.OnClickListener() {
-                public void onClick(DialogInterface dialog, int id) {
-                    confirmCommand.execute();
-                }
-            })
-            .setNegativeButton(R.string.dialogCancel, new DialogInterface.OnClickListener() {
-                public void onClick(DialogInterface dialog, int id){}})
+            .setPositiveButton(R.string.dialogOK, (dialog, id) -> confirmCommand.execute())
+            .setNegativeButton(R.string.dialogCancel, (dialog, id) -> {})
             .show();
     }
     public static void reloadWithParentStack(Activity activity)
@@ -116,6 +94,6 @@ public class Utils
     }
     public interface Command
     {
-        public void execute();
+        void execute();
     }
 }
