@@ -10,6 +10,7 @@ implements Comparable<AppInfo>, Parcelable
     LogFile logInfo;
     String label, packageName, versionName, sourceDir, dataDir;
     int versionCode, backupMode;
+    long lastUpdateTime;
     private boolean system, installed, checked, disabled;
     public Bitmap icon;
     public static final int MODE_UNSET = 0;
@@ -17,12 +18,13 @@ implements Comparable<AppInfo>, Parcelable
     public static final int MODE_DATA = 2;
     public static final int MODE_BOTH = 3;
 
-    public AppInfo(String packageName, String label, String versionName, int versionCode, String sourceDir, String dataDir, boolean system, boolean installed)
+    public AppInfo(String packageName, String label, String versionName, int versionCode, long lastUpdateTime, String sourceDir, String dataDir, boolean system, boolean installed)
     {
         this.label = label;
         this.packageName = packageName;
         this.versionName = versionName;
         this.versionCode = versionCode;
+        this.lastUpdateTime = lastUpdateTime;
         this.sourceDir = sourceDir;
         this.dataDir = dataDir;
         this.system = system;
@@ -44,6 +46,9 @@ implements Comparable<AppInfo>, Parcelable
     public int getVersionCode()
     {
         return versionCode;
+    }
+    public long getLastUpdateTime() {
+        return lastUpdateTime;
     }
     public String getSourceDir()
     {
@@ -129,6 +134,7 @@ implements Comparable<AppInfo>, Parcelable
         out.writeString(sourceDir);
         out.writeString(dataDir);
         out.writeInt(versionCode);
+        out.writeLong(lastUpdateTime);
         out.writeInt(backupMode);
         out.writeBooleanArray(new boolean[] {system, installed, checked});
         out.writeParcelable(icon, flags);
@@ -153,12 +159,13 @@ implements Comparable<AppInfo>, Parcelable
         sourceDir = in.readString();
         dataDir = in.readString();
         versionCode = in.readInt();
+        lastUpdateTime = in.readLong();
         backupMode = in.readInt();
         boolean[] bools = new boolean[4];
         in.readBooleanArray(bools);
         system = bools[0];
         installed = bools[1];
         checked = bools[2];
-        icon = (Bitmap) in.readParcelable(getClass().getClassLoader());
+        icon = in.readParcelable(getClass().getClassLoader());
     }
 }

@@ -140,21 +140,6 @@ public class LogFile implements Parcelable
             Log.e(TAG, "LogFile.writeLogFile: " + e.toString());
         }
     }
-    public static String formatDate(Date date, boolean localTimestampFormat)
-    {
-        String dateFormated;
-        if(localTimestampFormat)
-        {
-            DateFormat dateFormat = DateFormat.getDateTimeInstance();
-            dateFormated = dateFormat.format(date);
-        }
-        else
-        {
-            @SuppressLint("SimpleDateFormat") SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy/MM/dd - HH:mm:ss");
-            dateFormated = dateFormat.format(date);
-        }
-        return dateFormated;
-    }
     public int describeContents()
     {
         return 0;

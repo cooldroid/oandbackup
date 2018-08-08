@@ -80,7 +80,7 @@ public class AppInfoHelper
                     dataDir = "/data/system";
                 AppInfo appInfo = new AppInfo(pinfo.packageName,
                     pinfo.applicationInfo.loadLabel(pm).toString(),
-                    pinfo.versionName, pinfo.versionCode,
+                    pinfo.versionName, pinfo.versionCode, pinfo.lastUpdateTime,
                     pinfo.applicationInfo.sourceDir, dataDir, isSystem,
                     true);
                 File subdir = new File(backupDir, pinfo.packageName);
@@ -114,7 +114,7 @@ public class AppInfoHelper
                         LogFile logInfo = new LogFile(new File(backupDir.getAbsolutePath() + "/" + folder), folder);
                         if(logInfo.getLastBackupMillis() > 0)
                         {
-                            AppInfo appInfo = new AppInfo(logInfo.getPackageName(), logInfo.getLabel(), logInfo.getVersionName(), logInfo.getVersionCode(), logInfo.getSourceDir(), logInfo.getDataDir(), logInfo.isSystem(), false);
+                            AppInfo appInfo = new AppInfo(logInfo.getPackageName(), logInfo.getLabel(), logInfo.getVersionName(), logInfo.getVersionCode(), logInfo.getLastBackupMillis(), logInfo.getSourceDir(), logInfo.getDataDir(), logInfo.isSystem(), false);
                             appInfo.setLogInfo(logInfo);
                             list.add(appInfo);
                         }
@@ -155,21 +155,21 @@ public class AppInfoHelper
         if(apiCheck)
             bluetooth.setFilesList("/data/misc/bluedroid/");
         else
-            bluetooth.setFilesList(new String[] {"/data/misc/bluetooth", "/data/misc/bluetoothd"});
+            bluetooth.setFilesList("/data/misc/bluetooth", "/data/misc/bluetoothd");
         list.add(bluetooth);
 
         if(apiCheck)
         {
             AppInfoSpecial data = new AppInfoSpecial("data.usage.policy", context.getString(R.string.spec_data), versionName, versionCode);
-            data.setFilesList(new String[] {"/data/system/netpolicy.xml", "/data/system/netstats/"});
+            data.setFilesList("/data/system/netpolicy.xml", "/data/system/netstats/");
             list.add(data);
         }
 
         AppInfoSpecial wallpaper = new AppInfoSpecial("wallpaper", context.getString(R.string.spec_wallpaper), versionName, versionCode);
         if(apiCheck)
-            wallpaper.setFilesList(new String[] {"/data/system/users/" + currentUser + "/wallpaper", "/data/system/users/" + currentUser + "/wallpaper_info.xml"});
+            wallpaper.setFilesList("/data/system/users/" + currentUser + "/wallpaper", "/data/system/users/" + currentUser + "/wallpaper_info.xml");
         else
-            wallpaper.setFilesList(new String[] {"/data/system/wallpaper", "/data/system/wallpaper_info.xml"});
+            wallpaper.setFilesList("/data/system/wallpaper", "/data/system/wallpaper_info.xml");
         list.add(wallpaper);
 
         AppInfoSpecial wap = new AppInfoSpecial("wifi.access.points", context.getString(R.string.spec_wifiAccessPoints), versionName, versionCode);
@@ -198,11 +198,5 @@ public class AppInfoHelper
             list.add(appInfo);
         }
     }
-    public static Comparator<PackageInfo> pInfoPackageNameComparator = new Comparator<PackageInfo>()
-    {
-        public int compare(PackageInfo p1, PackageInfo p2)
-        {
-            return p1.packageName.compareToIgnoreCase(p2.packageName);
-        }
-    };
+    public static Comparator<PackageInfo> pInfoPackageNameComparator = (p1, p2) -> p1.packageName.compareToIgnoreCase(p2.packageName);
 }

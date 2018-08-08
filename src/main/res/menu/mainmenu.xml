@@ -53,6 +53,9 @@
                 <item android:id="@+id/sortByPackageName"
                     android:title="@string/sortByPackageName"
                     android:checked="true" />
+                <item android:id="@+id/sortByLastUpdated"
+                    android:title="@string/sortByLastUpdated"
+                    android:checked="true" />
             </group>
         </menu>
     </item>

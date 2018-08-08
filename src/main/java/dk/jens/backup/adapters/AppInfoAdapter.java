@@ -2,6 +2,7 @@ package dk.jens.backup.adapters;
 
 import android.content.Context;
 import android.graphics.Color;
+import android.text.TextUtils;
 import android.util.DisplayMetrics;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -15,6 +16,7 @@ import dk.jens.backup.AppInfo;
 import dk.jens.backup.LogFile;
 import dk.jens.backup.R;
 import dk.jens.backup.Sorter;
+import dk.jens.backup.Utils;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -34,10 +36,10 @@ public class AppInfoAdapter extends ArrayAdapter<AppInfo>
     {
         super(context, layout, items);
         this.context = context;
-        this.items = new ArrayList<AppInfo>(items);
+        this.items = new ArrayList<>(items);
         this.layout = layout;
         
-        originalValues = new ArrayList<AppInfo>(items);
+        originalValues = new ArrayList<>(items);
         try
         {
             DisplayMetrics metrics = new DisplayMetrics();
@@ -74,12 +76,13 @@ public class AppInfoAdapter extends ArrayAdapter<AppInfo>
             LayoutInflater inflater = (LayoutInflater) context.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
             convertView = inflater.inflate(layout, parent, false);
             viewHolder = new ViewHolder();
-            viewHolder.label = (TextView) convertView.findViewById(R.id.label);
-            viewHolder.packageName = (TextView) convertView.findViewById(R.id.packageName);
-            viewHolder.versionName = (TextView) convertView.findViewById(R.id.versionCode);
-            viewHolder.lastBackup = (TextView) convertView.findViewById(R.id.lastBackup);
-            viewHolder.backupMode = (TextView) convertView.findViewById(R.id.backupMode);
-            viewHolder.icon = (ImageView) convertView.findViewById(R.id.icon);
+            viewHolder.label = convertView.findViewById(R.id.label);
+            viewHolder.packageName = convertView.findViewById(R.id.packageName);
+            viewHolder.versionName = convertView.findViewById(R.id.versionCode);
+            viewHolder.lastBackup = convertView.findViewById(R.id.lastBackup);
+            viewHolder.lastUpdate = convertView.findViewById(R.id.lastUpdate);
+            viewHolder.backupMode = convertView.findViewById(R.id.backupMode);
+            viewHolder.icon = convertView.findViewById(R.id.icon);
             convertView.setTag(viewHolder);
         }
         else
@@ -118,7 +121,7 @@ public class AppInfoAdapter extends ArrayAdapter<AppInfo>
             }
             if(appInfo.getLogInfo() != null)
             {
-                viewHolder.lastBackup.setText(LogFile.formatDate(new Date(appInfo.getLogInfo().getLastBackupMillis()), localTimestampFormat));
+                viewHolder.lastBackup.setText(Utils.formatDate(new Date(appInfo.getLogInfo().getLastBackupMillis()), localTimestampFormat));
             }
             else
             {
@@ -131,11 +134,13 @@ public class AppInfoAdapter extends ArrayAdapter<AppInfo>
                     color = Color.rgb(7, 87, 117);
                 viewHolder.label.setTextColor(Color.WHITE);
                 viewHolder.packageName.setTextColor(color);
+                viewHolder.lastUpdate.setText(Utils.formatDate(new Date(appInfo.getLastUpdateTime()), localTimestampFormat));
             }
             else
             {
                 viewHolder.label.setTextColor(Color.GRAY);
                 viewHolder.packageName.setTextColor(Color.GRAY);
+                viewHolder.lastUpdate.setText(R.string.notInstalled);
             }
             int backupMode = appInfo.getBackupMode();
             switch(backupMode)
@@ -162,6 +167,7 @@ public class AppInfoAdapter extends ArrayAdapter<AppInfo>
         TextView packageName;
         TextView versionName;
         TextView lastBackup;
+        TextView lastUpdate;
         TextView backupMode;
         ImageView icon;
     }
@@ -398,6 +404,11 @@ public class AppInfoAdapter extends ArrayAdapter<AppInfo>
     public void sortByPackageName()
     {
         Collections.sort(originalValues, Sorter.appInfoPackageNameComparator);
+        notifyDataSetChanged();
+    }
+    public void sortByLastUpdated()
+    {
+        Collections.sort(originalValues, Sorter.appInfoLastUpdatedComparator);
         notifyDataSetChanged();
     }
     public void setNewOriginalValues(ArrayList newList)

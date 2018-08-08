@@ -37,6 +37,7 @@
     <string name="showOnlySpecialBackups">show only special backups</string>
     <string name="sortByLabel">sort by label</string>
     <string name="sortByPackageName">sort by packagename</string>
+    <string name="sortByLastUpdated">sort by last updated</string>
     <string name="sort">sort and filter</string>
     <string name="uninstallDialogMessage">uninstall this app?</string>
     <string name="deleteBackupDialogMessage">delete backup files?</string>
@@ -45,6 +46,7 @@
     <string name="dialogYes">yes</string>
     <string name="dialogNo">no</string>
     <string name="noBackupYet">no backup yet</string>
+    <string name="notInstalled">not installed</string>
     <string name="restoreDataWithoutApkError">cannot restore data without restoring apk, package is not installed</string>
     <string name="collectingData">collecting package info</string>
     <string name="suCheck">checking for superuser and busybox</string>

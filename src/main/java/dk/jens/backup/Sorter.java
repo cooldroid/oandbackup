@@ -10,7 +10,7 @@ public class Sorter
 {
     AppInfoAdapter adapter;
     FilteringMethod filteringMethod = FilteringMethod.ALL;
-    SortingMethod sortingMethod = SortingMethod.PACKAGENAME;
+    SortingMethod sortingMethod = SortingMethod.LABEL;
     // SparseIntArray is more memory efficient than mapping integers to integers using a hashmap
     private static final SparseIntArray convertFilteringIdMap, convertSortingIdMap;
     SharedPreferences prefs;
@@ -41,6 +41,7 @@ public class Sorter
         convertSortingIdMap = new SparseIntArray(2);
         convertSortingIdMap.put(SortingMethod.LABEL.ordinal(), R.id.sortByLabel);
         convertSortingIdMap.put(SortingMethod.PACKAGENAME.ordinal(), R.id.sortByPackageName);
+        convertSortingIdMap.put(SortingMethod.LASTUPDATED.ordinal(), R.id.sortByLastUpdated);
     }
     public enum FilteringMethod
     {
@@ -68,7 +69,8 @@ public class Sorter
     public enum SortingMethod
     {
         LABEL(R.id.sortByLabel),
-        PACKAGENAME(R.id.sortByPackageName);
+        PACKAGENAME(R.id.sortByPackageName),
+        LASTUPDATED(R.id.sortByLastUpdated);
         int id;
         SortingMethod(int id)
         {
@@ -84,6 +86,8 @@ public class Sorter
             m1.getLabel().compareToIgnoreCase(m2.getLabel());
     public static Comparator<AppInfo> appInfoPackageNameComparator = (m1, m2) ->
             m1.getPackageName().compareToIgnoreCase(m2.getPackageName());
+    public static Comparator<AppInfo> appInfoLastUpdatedComparator = (m1, m2) ->
+            Long.compare(m2.getLastUpdateTime(), m1.getLastUpdateTime());
 
     public void sort(int id)
     {
@@ -144,6 +148,12 @@ public class Sorter
             case R.id.sortByPackageName:
                 sortingMethod = SortingMethod.PACKAGENAME;
                 adapter.sortByPackageName();
+                sort(filteringMethod.getId());
+                saveInPrefs("sortingId", sortingMethod.ordinal());
+                break;
+            case R.id.sortByLastUpdated:
+                sortingMethod = SortingMethod.LASTUPDATED;
+                adapter.sortByLastUpdated();
                 sort(filteringMethod.getId());
                 saveInPrefs("sortingId", sortingMethod.ordinal());
                 break;

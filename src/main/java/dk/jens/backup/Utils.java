@@ -1,5 +1,6 @@
 package dk.jens.backup;
 
+import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.TaskStackBuilder;
@@ -10,6 +11,9 @@ import android.widget.Toast;
 import dk.jens.backup.ui.HandleMessages;
 
 import java.io.File;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 
 public class Utils
 {
@@ -95,5 +99,20 @@ public class Utils
     public interface Command
     {
         void execute();
+    }
+    public static String formatDate(Date date, boolean localTimestampFormat)
+    {
+        String dateFormated;
+        if(localTimestampFormat)
+        {
+            DateFormat dateFormat = DateFormat.getDateTimeInstance();
+            dateFormated = dateFormat.format(date);
+        }
+        else
+        {
+            @SuppressLint("SimpleDateFormat") SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy/MM/dd - HH:mm:ss");
+            dateFormated = dateFormat.format(date);
+        }
+        return dateFormated;
     }
 }
