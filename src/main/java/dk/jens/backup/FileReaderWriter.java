@@ -28,7 +28,8 @@ public class FileReaderWriter
         if(string != null && file != null) {
             try(FileWriter fw = new FileWriter(file.getAbsoluteFile(), append);
                     BufferedWriter bw = new BufferedWriter(fw)) {
-                bw.write(string + "\n");
+                bw.write(string);
+                bw.newLine();
                 return true;
             }
             catch(IOException e)
@@ -45,7 +46,7 @@ public class FileReaderWriter
             String line;
             while((line = reader.readLine()) != null)
             {
-                sb.append(line + "\n");
+                sb.append(line).append("\n");
             }
             return sb.toString();
         }

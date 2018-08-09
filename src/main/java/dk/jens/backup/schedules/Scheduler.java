@@ -72,6 +72,8 @@ BlacklistListener
 
         transferOldValues();
 
+        edit.apply();
+
         viewList = new ArrayList<View>();
         blacklistsDBHelper = new BlacklistsDBHelper(this);
     }
@@ -276,25 +278,22 @@ BlacklistListener
     public void onItemSelected(AdapterView<?> parent, View view, int pos, long id)
     {
         int number = (Integer) parent.getTag();
+        toggleSecondaryButtons((LinearLayout) parent.getParent(), (Spinner) parent, number);
         switch(parent.getId())
         {
             case R.id.sched_spinner:
-                toggleSecondaryButtons((LinearLayout) parent.getParent(), (Spinner) parent, number);
-                if(pos == 4)
-                {
-                    CustomPackageList.showList(this, number);
-                }
+                //if(pos == 4) {
+                //   CustomPackageList.showList(this, number);
+                //}
                 edit.putInt(Constants.PREFS_SCHEDULES_MODE + number, pos);
-                edit.commit();
                 break;
             case R.id.sched_spinnerSubModes:
                 edit.putInt(Constants.PREFS_SCHEDULES_SUBMODE + number, pos);
-                edit.commit();
                 break;
         }
+        edit.commit();
     }
-    public void onNothingSelected(AdapterView<?> parent)
-    {}
+    public void onNothingSelected(AdapterView<?> parent) {}
 
     @Override
     public void onBlacklistChanged(CharSequence[] blacklist, int id) {
@@ -493,7 +492,6 @@ BlacklistListener
             edit.remove(Constants.PREFS_SCHEDULES_MODE);
             edit.remove(Constants.PREFS_SCHEDULES_TIMEPLACED);
             edit.remove(Constants.PREFS_SCHEDULES_TIMEUNTILNEXTEVENT);
-            edit.commit();
         }
     }
     private class StartSchedule implements Utils.Command

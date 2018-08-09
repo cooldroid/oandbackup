@@ -50,7 +50,7 @@ public class CommandHandler {
             errorHandler.accept(line);
         }
 
-        if (!(code == 0 || code == 127)) {
+        if (!(code == 0)) {
             Exception t = new Exception(TextUtils.join("\n ", stderr));
             exceptionHandler.accept(t);
             code = 1;

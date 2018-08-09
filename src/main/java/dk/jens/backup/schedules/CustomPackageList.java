@@ -30,7 +30,7 @@ public class CustomPackageList
             Constants.PREFS_PATH_BACKUP_DIRECTORY, FileCreationHelper
             .getDefaultBackupDirPath()), filename);
         final CharSequence[] items = collectItems();
-        final ArrayList<Integer> selected = new ArrayList<Integer>();
+        final ArrayList<Integer> selected = new ArrayList<>();
         boolean[] checked = new boolean[items.length];
         for(int i = 0; i < items.length; i++)
         {
@@ -42,39 +42,28 @@ public class CustomPackageList
         }
         new AlertDialog.Builder(activity)
             .setTitle(R.string.customListTitle)
-            .setMultiChoiceItems(items, checked, new DialogInterface.OnMultiChoiceClickListener()
-            {
-                public void onClick(DialogInterface dialog, int id, boolean isChecked)
+            .setMultiChoiceItems(items, checked, (dialog, id, isChecked) -> {
+                if(isChecked)
                 {
-                    if(isChecked)
-                    {
-                        selected.add(id);
-                    }
-                    else
-                    {
-                        selected.remove((Integer) id); // cast as Integer to distinguish between remove(Object) and remove(index)
-                    }
+                    selected.add(id);
+                }
+                else
+                {
+                    selected.remove((Integer) id); // cast as Integer to distinguish between remove(Object) and remove(index)
                 }
             })
-            .setPositiveButton(R.string.dialogOK, new DialogInterface.OnClickListener()
-            {
-                public void onClick(DialogInterface dialog, int id)
-                {
-                    handleSelectedItems(frw, items, selected);
-                }
-            })
-            .setNegativeButton(R.string.dialogCancel, new DialogInterface.OnClickListener() {
-                public void onClick(DialogInterface dialog, int id){}})
+            .setPositiveButton(R.string.dialogOK, (dialog, id) -> handleSelectedItems(frw, items, selected))
+            .setNegativeButton(R.string.dialogCancel, (dialog, id) -> {})
             .show();
     }
     private static CharSequence[] collectItems()
     {
-        ArrayList<String> list = new ArrayList<String>();
+        ArrayList<String> list = new ArrayList<>();
         for(AppInfo appInfo : appInfoList)
         {
             list.add(appInfo.getPackageName());
         }
-        return list.toArray(new CharSequence[list.size()]);
+        return list.toArray(new CharSequence[0]);
     }
     private static void handleSelectedItems(FileReaderWriter frw, CharSequence[] items, ArrayList<Integer> selected)
     {
