@@ -2,15 +2,14 @@
 
 set -e
 
+TARGET=armv7-linux-androideabi
+TARGET_ABI=armeabi-v7a
+
 function build {
+	build_mode=$1
 	cargo_options=""
-	gradle_mode=""
-	if test $1 = "release"; then
+	if test $build_mode = "release"; then
 		cargo_options="--release"
-		gradle_mode="build"
-	elif test $1 = "debug"; then
-		cargo_options=""
-		gradle_mode="assembleDebug"
 	fi
 
 	cd $(realpath $(dirname $0))
@@ -18,12 +17,10 @@ function build {
 	cd oab-utils
 	set -x
 	cargo test
-	cargo build $cargo_options --target armv7-linux-androideabi
-	mkdir -p ../src/main/assets
-	cp -v target/armv7-linux-androideabi/release/oab-utils ../src/main/assets
+	cargo build $cargo_options --target $TARGET
+	mkdir -p ../assets/$TARGET_ABI
+	cp -v target/$TARGET/$build_mode/oab-utils ../assets/$TARGET_ABI
 
-	cd ../
-	grad $gradle_mode
 	set +x
 }
 
@@ -32,10 +29,19 @@ if test $# -eq 0; then
 	exit 1
 fi
 
+ACTION=
 while test $# -gt 0; do
 	case $1 in
+	"--target")
+		TARGET=$2
+		shift
+		;;
+	"--abi")
+	    TARGET_ABI=$2
+	    shift
+	    ;;
 	"release" | "debug")
-		build $1
+		ACTION="build $1"
 		;;
 	*)
 		printf "unknown option $1\n"
@@ -44,3 +50,5 @@ while test $# -gt 0; do
 	esac
 	shift
 done
+
+$ACTION

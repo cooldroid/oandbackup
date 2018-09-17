@@ -66,6 +66,7 @@ implements SharedPreferences.OnSharedPreferenceChangeListener, ActionListener
     public void onCreate(Bundle savedInstanceState)
     {
         super.onCreate(savedInstanceState);
+        Utils.logDeviceInfo(this, TAG);
         setContentView(R.layout.main);
         handleMessages = new HandleMessages(this);
 
@@ -239,7 +240,9 @@ implements SharedPreferences.OnSharedPreferenceChangeListener, ActionListener
     {
         Thread refreshThread = new Thread(() -> {
             handleMessages.showMessage("", getString(R.string.collectingData));
-            appInfoList = AppInfoHelper.getPackageInfo(OAndBackup.this, backupDir, true);
+            appInfoList = AppInfoHelper.getPackageInfo(OAndBackup.this, backupDir, true, PreferenceManager.getDefaultSharedPreferences(
+                    OAndBackup.this).getBoolean(Constants.PREFS_ENABLESPECIALBACKUPS,
+                    true));
             runOnUiThread(() -> {
                 // temporary work-around until the race condition between refresh and oncreate when returning from batchactivity with changesmade have been fixed
                 if(adapter != null && sorter != null)
@@ -633,7 +636,9 @@ implements SharedPreferences.OnSharedPreferenceChangeListener, ActionListener
             if(appInfoList == null)
             {
                 handleMessages.changeMessage("", getString(R.string.collectingData));
-                appInfoList = AppInfoHelper.getPackageInfo(OAndBackup.this, backupDir, true);
+                appInfoList = AppInfoHelper.getPackageInfo(OAndBackup.this,
+                    backupDir, true, prefs.getBoolean(Constants.
+                    PREFS_ENABLESPECIALBACKUPS, true));
                 LanguageHelper.legacyKeepLanguage(OAndBackup.this, langCode);
                 handleMessages.endMessage();
             }

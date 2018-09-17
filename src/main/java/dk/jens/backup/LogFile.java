@@ -127,7 +127,8 @@ public class LogFile implements Parcelable
             String json = jsonObject.toString(4);
             File outFile = new File(backupSubDir, appInfo.getPackageName() + ".log");
             outFile.createNewFile();
-            try(FileWriter fw = new FileWriter(outFile.getAbsoluteFile()); BufferedWriter bw = new BufferedWriter(fw)) {
+            try(BufferedWriter bw = new BufferedWriter(
+                    new FileWriter(outFile.getAbsoluteFile()))) {
                 bw.write(json + "\n");
             }
         }
@@ -139,6 +140,21 @@ public class LogFile implements Parcelable
         {
             Log.e(TAG, "LogFile.writeLogFile: " + e.toString());
         }
+    }
+    public static String formatDate(Date date, boolean localTimestampFormat)
+    {
+        String dateFormated;
+        if(localTimestampFormat)
+        {
+            DateFormat dateFormat = DateFormat.getDateTimeInstance();
+            dateFormated = dateFormat.format(date);
+        }
+        else
+        {
+            SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy/MM/dd - HH:mm:ss");
+            dateFormated = dateFormat.format(date);
+        }
+        return dateFormated;
     }
     public int describeContents()
     {
