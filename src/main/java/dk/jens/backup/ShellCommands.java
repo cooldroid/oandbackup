@@ -5,6 +5,7 @@ import android.app.ActivityManager;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.os.Build;
+import android.os.Environment;
 import android.text.TextUtils;
 import android.util.Log;
 import org.json.JSONException;
@@ -41,6 +42,8 @@ public class ShellCommands implements CommandHandler.UnexpectedExceptionListener
     boolean multiuserEnabled;
     private static Pattern gidPattern = Pattern.compile("Gid:\\s*\\(\\s*(\\d+)");
     private static Pattern uidPattern = Pattern.compile("Uid:\\s*\\(\\s*(\\d+)");
+    private static String extAndroidData = Environment.
+            getExternalStoragePublicDirectory("Android/data").toString();
     public ShellCommands(SharedPreferences prefs, ArrayList<String> users,
         File filesDir)
     {
@@ -161,7 +164,7 @@ public class ShellCommands implements CommandHandler.UnexpectedExceptionListener
         }
 
         File expansionDir = getExpansionDirectoryPath(context, packageData);
-        File backupSubDirExpansionFiles = null;
+        File backupSubDirExpansionFiles;
         boolean backupExpansionFiles = prefs.getBoolean("backupExpansionFiles", false);
 
         if (backupExpansionFiles && backupMode != AppInfo.MODE_APK && expansionDir != null) {
@@ -261,8 +264,8 @@ public class ShellCommands implements CommandHandler.UnexpectedExceptionListener
             {
                 File externalFiles = new File(new File(backupSubDir, EXTERNAL_FILES), dataDirName + ".tar.gz");
                 if (externalFiles.exists()) {
-                    String externalFilesPath = context.getExternalFilesDir(null).getParentFile().getAbsolutePath();
-                    commands.add(busybox + " tar -C " + externalFilesPath + " -xzf " + externalFiles.getAbsolutePath());
+                    //String externalFilesPath = context.getExternalFilesDir(null).getParentFile().getParentFile().getAbsolutePath();
+                    commands.add(busybox + " tar -C " + extAndroidData + " -xzf " + externalFiles.getAbsolutePath());
                 }
             }
 
@@ -288,7 +291,7 @@ public class ShellCommands implements CommandHandler.UnexpectedExceptionListener
             }
             commands.add(restoreCommand);
             if (Build.VERSION.SDK_INT >= 23)
-                commands.add("restorecon -R " + dataDir + " || true");
+                commands.add("restorecon -R " + dataDir);
             int ret = CommandHandler.runCmd("su", commands, line -> {},
                     line -> writeErrorLog(label, line),
                     e -> Log.e(TAG, "doRestore: " + e.toString()), this);
@@ -479,16 +482,16 @@ public class ShellCommands implements CommandHandler.UnexpectedExceptionListener
                 if(!legacyMode) {
                     commands.add(String.format("%s change-owner -r %s %s",
                         oabUtils, ownership.toString(), packageDir));
-                    commands.add(String.format("%s set-permissions -r 771 %s", oabUtils,
-                        packageDir));
+                    //commands.add(String.format("%s set-permissions -r 771 %s", oabUtils,
+                    //    packageDir));
                 } else {
                     // android 6 has moved to toybox which doesn't include [ or [[
                     // meanwhile its implementation of test seems to be broken at least in cm 13
                     // cf. https://github.com/jensstein/oandbackup/issues/116
                     commands.add(String.format("%s chown -R %s %s",
                         busybox, ownership.toString(), packageDir));
-                    commands.add(String.format("%s chmod -R 771 %s",
-                        busybox, packageDir));
+                    //commands.add(String.format("%s chmod -R 771 %s",
+                    //    busybox, packageDir));
                 }
             }
             // midlertidig indtil mere detaljeret som i fix_permissions l.367
@@ -518,7 +521,7 @@ public class ShellCommands implements CommandHandler.UnexpectedExceptionListener
             * directory a temporary directory on the external storage
             * is created where the apk is then copied to.
             */
-            String tempPath = android.os.Environment.getExternalStorageDirectory() + "/apkTmp" + System.currentTimeMillis();
+            String tempPath = Environment.getExternalStorageDirectory() + "/apkTmp" + System.currentTimeMillis();
             commands.add(busybox + " mkdir " + swapBackupDirPath(tempPath));
             commands.add(busybox + " cp " + swapBackupDirPath(
                 backupDir.getAbsolutePath() + "/" + apk) + " " +
@@ -530,7 +533,12 @@ public class ShellCommands implements CommandHandler.UnexpectedExceptionListener
             String tmpDir = "/data/local/tmp";
             String tmpApk = tmpDir + "/base.apk";
             //commands.add(busybox + " tar -C " + tmpDir + " -xzf " + backupDir.getAbsolutePath() + "/" + apk + " && pm install -r " + tmpApk);
-            commands.add(busybox + " gzip -dc " + backupDir.getAbsolutePath() + "/" + apk + " > " + tmpApk + " && pm install -r " + tmpApk);
+            commands.add(busybox + " gzip -dc " + backupDir.getAbsolutePath() + "/" + apk + " > " + tmpApk);
+            //commands.add("if [ -z $(" + busybox + " tar -tzf " + backupDir.getAbsolutePath() + "/" + apk + ") ]; then " +
+            //        busybox + " gzip -dc " + backupDir.getAbsolutePath() + "/" + apk + " > " + tmpApk + "; else " +
+            //        busybox + " tar -C " + tmpDir + " -xzf " + backupDir.getAbsolutePath() + "/" + apk +
+            //        "; fi");
+            commands.add("pm install -r " + tmpApk);
             commands.add("rm -f " + tmpApk);
         }
         List<String> err = new ArrayList<>();
@@ -667,13 +675,7 @@ public class ShellCommands implements CommandHandler.UnexpectedExceptionListener
     public void deleteOldApk(File backupfolder, String newApkPath)
     {
         final String apk = new File(newApkPath).getName();
-        File[] files = backupfolder.listFiles(new FilenameFilter()
-        {
-            public boolean accept(File dir, String filename)
-            {
-                return (!filename.equals(apk) && filename.endsWith(".apk"));
-            }
-        });
+        File[] files = backupfolder.listFiles((dir, filename) -> (!filename.equals(apk) && filename.endsWith(".apk")));
         if(files != null)
         {
             for(File file : files)
@@ -948,8 +950,8 @@ public class ShellCommands implements CommandHandler.UnexpectedExceptionListener
     }
     public File getExternalFilesDirPath(Context context, String packageData)
     {
-        String externalFilesPath = context.getExternalFilesDir(null).getParentFile().getAbsolutePath();
-        File externalFilesDir = new File(externalFilesPath, new File(packageData).getName());
+        //String externalFilesPath = context.getExternalFilesDir(null).getParentFile().getParentFile().getAbsolutePath();
+        File externalFilesDir = new File(extAndroidData, new File(packageData).getName());
         if(externalFilesDir.exists())
             return externalFilesDir;
         return null;
