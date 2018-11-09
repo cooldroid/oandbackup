@@ -4,7 +4,7 @@ buildscript {
         google()
     }
     dependencies {
-        classpath 'com.android.tools.build:gradle:3.1.4'
+        classpath 'com.android.tools.build:gradle:3.2.1'
     }
 }
 
@@ -21,9 +21,9 @@ repositories {
 }
 
 dependencies {
-    implementation 'com.android.support:support-core-utils:27.1.1'
+    implementation 'com.android.support:support-core-utils:28.0.0'
     implementation 'org.sufficientlysecure:openpgp-api:12.0'
-    implementation 'com.github.topjohnwu:libsu:2.0.1'
+    implementation 'com.github.topjohnwu:libsu:2.0.3'
 }
 
 int versionMajor = 0
@@ -54,7 +54,7 @@ Map<String, Integer> abiVersionCodes = [
 
 android {
     compileSdkVersion 28
-    buildToolsVersion '28.0.2'
+    buildToolsVersion '28.0.3'
 
     defaultConfig {
         versionCode 21
@@ -222,6 +222,9 @@ android {
             tasks."merge${name}DebugResources".dependsOn "generate${name}LibDir"
             tasks."merge${name}ReleaseResources".dependsOn "generate${name}LibDir"
         }
+    }
+    packagingOptions{
+        exclude 'META-INF/proguard/androidx-annotations.pro'
     }
 }
 
