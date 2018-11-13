@@ -8,14 +8,14 @@ import java.util.Comparator;
 
 public class Sorter
 {
-    AppInfoAdapter adapter;
-    FilteringMethod filteringMethod = FilteringMethod.ALL;
-    SortingMethod sortingMethod = SortingMethod.LABEL;
+    private AppInfoAdapter adapter;
+    private FilteringMethod filteringMethod = FilteringMethod.ALL;
+    private SortingMethod sortingMethod = SortingMethod.LABEL;
     // SparseIntArray is more memory efficient than mapping integers to integers using a hashmap
     private static final SparseIntArray convertFilteringIdMap, convertSortingIdMap;
-    SharedPreferences prefs;
-    SharedPreferences.Editor prefsEdit;
-    int oldBackups = 0;
+    private SharedPreferences prefs;
+    private SharedPreferences.Editor prefsEdit;
+    private int oldBackups = 0;
     public Sorter(AppInfoAdapter adapter, SharedPreferences prefs)
     {
         this.adapter = adapter;
@@ -38,10 +38,11 @@ public class Sorter
     }
     static
     {
-        convertSortingIdMap = new SparseIntArray(2);
+        convertSortingIdMap = new SparseIntArray(4);
         convertSortingIdMap.put(SortingMethod.LABEL.ordinal(), R.id.sortByLabel);
         convertSortingIdMap.put(SortingMethod.PACKAGENAME.ordinal(), R.id.sortByPackageName);
         convertSortingIdMap.put(SortingMethod.LASTUPDATED.ordinal(), R.id.sortByLastUpdated);
+        convertSortingIdMap.put(SortingMethod.BACKUP_DATE.ordinal(), R.id.sortByBackupDate);
     }
     public enum FilteringMethod
     {
@@ -70,7 +71,8 @@ public class Sorter
     {
         LABEL(R.id.sortByLabel),
         PACKAGENAME(R.id.sortByPackageName),
-        LASTUPDATED(R.id.sortByLastUpdated);
+        LASTUPDATED(R.id.sortByLastUpdated),
+        BACKUP_DATE(R.id.sortByBackupDate);
         int id;
         SortingMethod(int id)
         {
@@ -88,6 +90,18 @@ public class Sorter
             m1.getPackageName().compareToIgnoreCase(m2.getPackageName());
     public static Comparator<AppInfo> appInfoLastUpdatedComparator = (m1, m2) ->
             Long.compare(m2.getLastUpdateTime(), m1.getLastUpdateTime());
+    public static Comparator<AppInfo> appInfoBackupDateComparator = (m1, m2) -> {
+        LogFile logInfoM1 = m1.getLogInfo();
+        LogFile logInfoM2 = m2.getLogInfo();
+        long lastBackupMillisM1 = -1, lastBackupMillisM2 = -1;
+        if (logInfoM1 != null) {
+            lastBackupMillisM1 = logInfoM1.getLastBackupMillis();
+        }
+        if (logInfoM2 != null) {
+            lastBackupMillisM2 = logInfoM2.getLastBackupMillis();
+        }
+        return Long.compare(lastBackupMillisM2, lastBackupMillisM1);
+    };
 
     public void sort(int id)
     {
@@ -154,6 +168,12 @@ public class Sorter
             case R.id.sortByLastUpdated:
                 sortingMethod = SortingMethod.LASTUPDATED;
                 adapter.sortByLastUpdated();
+                sort(filteringMethod.getId());
+                saveInPrefs("sortingId", sortingMethod.ordinal());
+                break;
+            case R.id.sortByBackupDate:
+                sortingMethod = SortingMethod.BACKUP_DATE;
+                adapter.sortByBackupDate();
                 sort(filteringMethod.getId());
                 saveInPrefs("sortingId", sortingMethod.ordinal());
                 break;

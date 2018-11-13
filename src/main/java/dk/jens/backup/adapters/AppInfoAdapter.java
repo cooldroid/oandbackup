@@ -411,6 +411,11 @@ public class AppInfoAdapter extends ArrayAdapter<AppInfo>
         Collections.sort(originalValues, Sorter.appInfoLastUpdatedComparator);
         notifyDataSetChanged();
     }
+    public void sortByBackupDate()
+    {
+        Collections.sort(originalValues, Sorter.appInfoBackupDateComparator);
+        notifyDataSetChanged();
+    }
     public void setNewOriginalValues(ArrayList newList)
     {
         originalValues = new ArrayList<AppInfo>(newList);

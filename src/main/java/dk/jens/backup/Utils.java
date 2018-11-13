@@ -17,9 +17,12 @@ import java.io.File;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.Locale;
 
 public class Utils
 {
+    private static SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyy/MM/dd - HH:mm:ss", Locale.getDefault());
+
     public static void showErrors(final Activity activity)
     {
         activity.runOnUiThread(() -> {
@@ -129,8 +132,7 @@ public class Utils
         }
         else
         {
-            @SuppressLint("SimpleDateFormat") SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy/MM/dd - HH:mm:ss");
-            dateFormated = dateFormat.format(date);
+            dateFormated = simpleDateFormat.format(date);
         }
         return dateFormated;
     }

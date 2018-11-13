@@ -74,14 +74,14 @@ BlacklistListener
 
         edit.apply();
 
-        viewList = new ArrayList<View>();
+        viewList = new ArrayList<>();
         blacklistsDBHelper = new BlacklistsDBHelper(this);
     }
     @Override
     public void onResume()
     {
         super.onResume();
-        LinearLayout main = (LinearLayout) findViewById(R.id.linearLayout);
+        LinearLayout main = findViewById(R.id.linearLayout);
         totalSchedules = prefs.getInt(Constants.PREFS_SCHEDULES_TOTAL, 0);
         totalSchedules = totalSchedules < 0 ? 0 : totalSchedules; // set to zero so there is always at least one schedule on activity start
         for(View view : viewList)
@@ -90,7 +90,7 @@ BlacklistListener
             if(parent != null)
                 parent.removeView(view);
         }
-        viewList = new ArrayList<View>();
+        viewList = new ArrayList<>();
         for(int i = 0; i <= totalSchedules; i++)
         {
             View v = buildUi(i);
@@ -148,24 +148,24 @@ BlacklistListener
     public View buildUi(int number)
     {
         View view = LayoutInflater.from(this).inflate(R.layout.schedule, null);
-        LinearLayout ll = (LinearLayout) view.findViewById(R.id.ll);
+        LinearLayout ll = view.findViewById(R.id.ll);
 
-        Button updateButton = (Button) view.findViewById(R.id.updateButton);
+        Button updateButton = view.findViewById(R.id.updateButton);
         updateButton.setOnClickListener(this);
-        Button removeButton = (Button) view.findViewById(R.id.removeButton);
+        Button removeButton = view.findViewById(R.id.removeButton);
         removeButton.setOnClickListener(this);
-        Button activateButton = (Button) view.findViewById(R.id.activateButton);
+        Button activateButton = view.findViewById(R.id.activateButton);
         activateButton.setOnClickListener(this);
-        EditText intervalDays = (EditText) view.findViewById(R.id.intervalDays);
+        EditText intervalDays = view.findViewById(R.id.intervalDays);
         String repeatString = Integer.toString(prefs.getInt(Constants.PREFS_SCHEDULES_REPEATTIME + number, 0));
         intervalDays.setText(repeatString);
-        EditText timeOfDay = (EditText) view.findViewById(R.id.timeOfDay);
+        EditText timeOfDay = view.findViewById(R.id.timeOfDay);
         String timeOfDayString = Integer.toString(prefs.getInt(Constants.PREFS_SCHEDULES_HOUROFDAY + number, 0));
         timeOfDay.setText(timeOfDayString);
-        CheckBox cb = (CheckBox) view.findViewById(R.id.checkbox);
+        CheckBox cb = view.findViewById(R.id.checkbox);
         cb.setChecked(prefs.getBoolean(Constants.PREFS_SCHEDULES_ENABLED + number, false));
-        Spinner spinner = (Spinner) view.findViewById(R.id.sched_spinner);
-        Spinner spinnerSubModes = (Spinner) view.findViewById(R.id.sched_spinnerSubModes);
+        Spinner spinner = view.findViewById(R.id.sched_spinner);
+        Spinner spinnerSubModes = view.findViewById(R.id.sched_spinnerSubModes);
         ArrayAdapter<CharSequence> adapter = ArrayAdapter.createFromResource(this, R.array.scheduleModes, android.R.layout.simple_spinner_item);
         adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
         spinner.setAdapter(adapter);
@@ -177,7 +177,7 @@ BlacklistListener
         spinnerSubModes.setSelection(prefs.getInt(Constants.PREFS_SCHEDULES_SUBMODE + number, 2), false);
         spinnerSubModes.setOnItemSelectedListener(this);
         
-        TextView timeLeftTextView = (TextView) view.findViewById(R.id.sched_timeLeft);
+        TextView timeLeftTextView = view.findViewById(R.id.sched_timeLeft);
 
         toggleSecondaryButtons(ll, spinner, number);
 
@@ -195,8 +195,8 @@ BlacklistListener
         int number = (Integer) v.getTag();
         boolean checked = ((CheckBox) v).isChecked();
         View view = viewList.get(number);
-        EditText intervalDays = (EditText) view.findViewById(R.id.intervalDays);
-        EditText timeOfDay = (EditText) view.findViewById(R.id.timeOfDay);
+        EditText intervalDays = view.findViewById(R.id.intervalDays);
+        EditText timeOfDay = view.findViewById(R.id.timeOfDay);
 
         if(checked)
         {
@@ -226,8 +226,8 @@ BlacklistListener
         try
         {
             View view = viewList.get(number);
-            EditText intervalDays = (EditText) view.findViewById(R.id.intervalDays);
-            EditText timeOfDay = (EditText) view.findViewById(R.id.timeOfDay);
+            EditText intervalDays = view.findViewById(R.id.intervalDays);
+            EditText timeOfDay = view.findViewById(R.id.timeOfDay);
 
             switch(v.getId())
             {
@@ -314,12 +314,12 @@ BlacklistListener
         View view = viewList.get(number);
         if(view != null)
         {
-            TextView timeLeftTextView = (TextView) view.findViewById(R.id.sched_timeLeft);
+            TextView timeLeftTextView = view.findViewById(R.id.sched_timeLeft);
             long timePlaced = prefs.getLong(
                 Constants.PREFS_SCHEDULES_TIMEPLACED + number, 0);
-            long repeat = (long)(prefs.getInt(
+            long repeat = prefs.getInt(
                 Constants.PREFS_SCHEDULES_REPEATTIME + number, 0) *
-                AlarmManager.INTERVAL_DAY);
+                AlarmManager.INTERVAL_DAY;
             long timePassed = System.currentTimeMillis() - timePlaced;
             long timeLeft = prefs.getLong(
                 Constants.PREFS_SCHEDULES_TIMEUNTILNEXTEVENT + number, 0) - timePassed;
@@ -370,8 +370,8 @@ BlacklistListener
     public void removeSecondaryButton(LinearLayout parent, View v)
     {
         int id = (v != null) ? v.getId() : -1;
-        Button bt = (Button) parent.findViewById(CUSTOMLISTUPDATEBUTTONID);
-        CheckBox cb = (CheckBox) parent.findViewById(EXCLUDESYSTEMCHECKBOXID);
+        Button bt = parent.findViewById(CUSTOMLISTUPDATEBUTTONID);
+        CheckBox cb = parent.findViewById(EXCLUDESYSTEMCHECKBOXID);
         if(bt != null && id != CUSTOMLISTUPDATEBUTTONID)
         {
             parent.removeView(bt);
@@ -393,9 +393,9 @@ BlacklistListener
                 long timeLeft = prefs.getLong(
                     Constants.PREFS_SCHEDULES_TIMEUNTILNEXTEVENT + (i + 1), 0) -
                     timePassed;
-                long repeat = (long)(prefs.getInt(
+                long repeat = prefs.getInt(
                     Constants.PREFS_SCHEDULES_REPEATTIME + (i + 1), 0) *
-                    AlarmManager.INTERVAL_DAY);
+                    AlarmManager.INTERVAL_DAY;
                 handleAlarms.cancelAlarm(i + 1);
                 handleAlarms.setAlarm(i, timeLeft, repeat);
             }
@@ -422,13 +422,13 @@ BlacklistListener
 
             // update tags on view elements
             View view = viewList.get(i + 1);
-            Button updateButton = (Button) view.findViewById(R.id.updateButton);
-            Button removeButton = (Button) view.findViewById(R.id.removeButton);
-            Button customListUpdateButton = (Button) view.findViewById(CUSTOMLISTUPDATEBUTTONID);
-            CheckBox cb = (CheckBox) view.findViewById(R.id.checkbox);
-            CheckBox excludeSystemCB = (CheckBox) view.findViewById(EXCLUDESYSTEMCHECKBOXID);
-            Spinner spinner = (Spinner) view.findViewById(R.id.sched_spinner);
-            Spinner spinnerSubModes = (Spinner) view.findViewById(R.id.sched_spinnerSubModes);
+            Button updateButton = view.findViewById(R.id.updateButton);
+            Button removeButton = view.findViewById(R.id.removeButton);
+            Button customListUpdateButton = view.findViewById(CUSTOMLISTUPDATEBUTTONID);
+            CheckBox cb = view.findViewById(R.id.checkbox);
+            CheckBox excludeSystemCB = view.findViewById(EXCLUDESYSTEMCHECKBOXID);
+            Spinner spinner = view.findViewById(R.id.sched_spinner);
+            Spinner spinnerSubModes = view.findViewById(R.id.sched_spinnerSubModes);
 
             updateButton.setTag(i);
             removeButton.setTag(i);

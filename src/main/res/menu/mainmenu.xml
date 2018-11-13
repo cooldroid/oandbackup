@@ -51,11 +51,12 @@
                 <item android:id="@+id/sortByLabel"
                     android:title="@string/sortByLabel" />
                 <item android:id="@+id/sortByPackageName"
-                    android:title="@string/sortByPackageName"
-                    android:checked="true" />
+                    android:title="@string/sortByPackageName" />
                 <item android:id="@+id/sortByLastUpdated"
                     android:title="@string/sortByLastUpdated"
                     android:checked="true" />
+                <item android:id="@+id/sortByBackupDate"
+                    android:title="@string/sortByBackupDate" />
             </group>
         </menu>
     </item>

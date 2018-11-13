@@ -14,6 +14,7 @@ import dk.jens.backup.OAndBackup;
 import dk.jens.backup.R;
 
 import java.util.ArrayList;
+import java.util.List;
 
 public class CustomPackageList
 {
@@ -32,9 +33,10 @@ public class CustomPackageList
         final CharSequence[] items = collectItems();
         final ArrayList<Integer> selected = new ArrayList<>();
         boolean[] checked = new boolean[items.length];
+        List<String> customList = frw.getList();
         for(int i = 0; i < items.length; i++)
         {
-            if(frw.contains(items[i].toString()))
+            if(customList.contains(items[i].toString()))
             {
                 checked[i] = true;
                 selected.add(i);

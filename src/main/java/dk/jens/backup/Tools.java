@@ -99,20 +99,9 @@ public class Tools extends ListActivity
                     new AlertDialog.Builder(this)
                     .setTitle(R.string.tools_batchDeleteTitle)
                     .setMessage(message.trim())
-                    .setPositiveButton(R.string.dialogYes, new DialogInterface.OnClickListener()
-                    {
-                        @Override
-                        public void onClick(DialogInterface dialog, int which)
-                        {
-                            changesMade();
-                            new Thread(new Runnable()
-                            {
-                                public void run()
-                                {
-                                    deleteBackups(deleteList);
-                                }
-                            }).start();
-                        }
+                    .setPositiveButton(R.string.dialogYes, (dialog, which) -> {
+                        changesMade();
+                        new Thread(() -> deleteBackups(deleteList)).start();
                     })
                     .setNegativeButton(R.string.dialogNo, null)
                     .show();
@@ -159,14 +148,7 @@ public class Tools extends ListActivity
         new AlertDialog.Builder(this)
         .setTitle(R.string.quickReboot)
         .setMessage(R.string.quickRebootMessage)
-        .setPositiveButton(R.string.dialogYes, new DialogInterface.OnClickListener()
-        {
-            @Override
-            public void onClick(DialogInterface dialog, int which)
-            {
-                shellCommands.quickReboot();
-            }
-        })
+        .setPositiveButton(R.string.dialogYes, (dialog, which) -> shellCommands.quickReboot())
         .setNegativeButton(R.string.dialogNo, null)
         .show();
     }

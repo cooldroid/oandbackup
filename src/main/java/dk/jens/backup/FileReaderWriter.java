@@ -9,6 +9,8 @@ import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.util.Arrays;
+import java.util.List;
 
 public class FileReaderWriter
 {
@@ -29,7 +31,9 @@ public class FileReaderWriter
             try(FileWriter fw = new FileWriter(file.getAbsoluteFile(), append);
                     BufferedWriter bw = new BufferedWriter(fw)) {
                 bw.write(string);
-                bw.newLine();
+                if (append) {
+                    bw.newLine();
+                }
                 return true;
             }
             catch(IOException e)
@@ -48,6 +52,7 @@ public class FileReaderWriter
             {
                 sb.append(line).append("\n");
             }
+            sb.deleteCharAt(sb.length() - 1);
             return sb.toString();
         }
         catch(FileNotFoundException e)
@@ -71,6 +76,10 @@ public class FileReaderWriter
             }
         }
         return false;
+    }
+    public List<String> getList() {
+        String[] lines = read().split("\n");
+        return Arrays.asList(lines);
     }
     public void clear()
     {

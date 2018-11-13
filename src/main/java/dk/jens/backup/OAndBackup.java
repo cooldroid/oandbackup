@@ -1,14 +1,19 @@
 package dk.jens.backup;
 
+import android.Manifest;
 import android.app.AlertDialog;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.content.res.Configuration;
 import android.content.SharedPreferences;
 import android.os.AsyncTask;
+import android.os.Build;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
+import android.support.v4.app.ActivityCompat;
+import android.support.v4.content.ContextCompat;
 import android.util.Log;
 import android.view.ContextMenu;
 import android.view.ContextMenu.ContextMenuInfo;
@@ -38,6 +43,7 @@ public class OAndBackup extends BaseActivity
 implements SharedPreferences.OnSharedPreferenceChangeListener, ActionListener
 {
     public static final String TAG = OAndBackup.class.getSimpleName().toLowerCase();
+    private static final int REQUEST_WRITE_STORAGE = 112;
     static final int BATCH_REQUEST = 1;
     static final int TOOLS_REQUEST = 2;
 
@@ -68,6 +74,17 @@ implements SharedPreferences.OnSharedPreferenceChangeListener, ActionListener
         super.onCreate(savedInstanceState);
         Utils.logDeviceInfo(this, TAG);
         setContentView(R.layout.main);
+        if (android.os.Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            boolean hasPermission = (ContextCompat.checkSelfPermission(getBaseContext(),
+                    Manifest.permission.READ_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED);
+            if (!hasPermission) {
+                ActivityCompat.requestPermissions(OAndBackup.this,
+                        new String[]{Manifest.permission.READ_EXTERNAL_STORAGE, Manifest.permission.WRITE_EXTERNAL_STORAGE,
+                                Manifest.permission.ACCESS_NETWORK_STATE, Manifest.permission.RECORD_AUDIO, Manifest.permission.MODIFY_AUDIO_SETTINGS, Manifest.permission.INTERNET
+                        },
+                        REQUEST_WRITE_STORAGE);
+            }
+        }
         handleMessages = new HandleMessages(this);
 
         // if onCreate is called due to a configuration change su and busybox shouldn't be checked again

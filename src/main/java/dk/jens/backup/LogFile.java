@@ -1,6 +1,5 @@
 package dk.jens.backup;
 
-import android.annotation.SuppressLint;
 import android.os.Parcel;
 import android.os.Parcelable;
 import android.util.Log;
@@ -12,6 +11,7 @@ import java.io.IOException;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.Locale;
 
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -19,10 +19,10 @@ import org.json.JSONObject;
 public class LogFile implements Parcelable
 {
     final static String TAG = OAndBackup.TAG;
-    String label, packageName, versionName, sourceDir, dataDir;
-    int versionCode, backupMode;
-    long lastBackupMillis;
-    boolean encrypted, system;
+    private String label, packageName, versionName, sourceDir, dataDir;
+    private int versionCode, backupMode;
+    private long lastBackupMillis;
+    private boolean encrypted, system;
     public LogFile(File backupSubDir, String packageName)
     {
         FileReaderWriter frw = new FileReaderWriter(backupSubDir.getAbsolutePath(), packageName + ".log");
@@ -151,7 +151,8 @@ public class LogFile implements Parcelable
         }
         else
         {
-            SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy/MM/dd - HH:mm:ss");
+            SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy/MM/dd - HH:mm:ss",
+                    Locale.getDefault());
             dateFormated = dateFormat.format(date);
         }
         return dateFormated;

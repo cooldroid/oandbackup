@@ -28,7 +28,7 @@
         android:key="rememberFiltering"
         android:title="@string/prefs_rememberFiltering"
         android:summary="@string/prefs_summaryRememberFiltering"
-        android:defaultValue="false"
+        android:defaultValue="true"
         />
     <EditTextPreference
         android:key="oldBackups"
@@ -46,18 +46,18 @@
         android:key="followSymlinks"
         android:title="@string/prefs_followSymlinks"
         android:summary="@string/prefs_summaryFollowSymlinks"
-        android:defaultValue="true"
+        android:defaultValue="false"
         />
     <CheckBoxPreference
         android:key="backupExternalFiles"
         android:title="@string/prefs_backupExternalFiles"
         android:summary="@string/prefs_summaryBackupExternalFiles"
-        android:defaultValue="false"
+        android:defaultValue="true"
         />
     <CheckBoxPreference
         android:key="enableSpecialBackups"
         android:title="@string/prefs_enableSpecialBackups"
-        android:defaultValue="true"
+        android:defaultValue="false"
         />
     <PreferenceScreen
         android:title="@string/prefs_cryptoMenu"

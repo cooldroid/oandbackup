@@ -38,6 +38,7 @@
     <string name="sortByLabel">sort by label</string>
     <string name="sortByPackageName">sort by packagename</string>
     <string name="sortByLastUpdated">sort by last updated</string>
+    <string name="sortByBackupDate">sort by last backup date</string>
     <string name="sort">sort and filter</string>
     <string name="uninstallDialogMessage">uninstall this app?</string>
     <string name="deleteBackupDialogMessage">delete backup files?</string>

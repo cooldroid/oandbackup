@@ -7,10 +7,10 @@ import android.os.Parcelable;
 public class AppInfo
 implements Comparable<AppInfo>, Parcelable
 {
-    LogFile logInfo;
-    String label, packageName, versionName, sourceDir, dataDir;
-    int versionCode, backupMode;
-    long lastUpdateTime;
+    private LogFile logInfo;
+    private String label, packageName, versionName, sourceDir, dataDir;
+    private int versionCode, backupMode;
+    private long lastUpdateTime;
     private boolean system, installed, checked, disabled;
     public Bitmap icon;
     public static final int MODE_UNSET = 0;

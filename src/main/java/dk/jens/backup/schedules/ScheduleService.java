@@ -5,6 +5,7 @@ import android.app.Notification;
 import android.app.Service;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.os.Build;
 import android.os.IBinder;
 import android.util.Log;
 import dk.jens.backup.BackupRestoreHelper;
@@ -35,7 +36,7 @@ implements BackupRestoreHelper.OnBackupRestoreListener
                 prefs.getInt(Constants.PREFS_SCHEDULES_HOUROFDAY + id, 0));
             edit.putLong(Constants.PREFS_SCHEDULES_TIMEUNTILNEXTEVENT + id, timeUntilNextEvent);
             edit.putLong(Constants.PREFS_SCHEDULES_TIMEPLACED + id, System.currentTimeMillis());
-            edit.commit();
+            edit.apply();
             // fix the time at which the alarm will be run the next time.
             // it can be wrong when scheduled in BootReceiver#onReceive()
             // to be run after AlarmManager.INTERVAL_FIFTEEN_MINUTES
@@ -58,8 +59,11 @@ implements BackupRestoreHelper.OnBackupRestoreListener
     {
         // build an empty notification for the service since progress
         // notifications are handled elsewhere
-        Notification notification = new Notification.Builder(this).build();
-        startForeground(ID, notification);
+        Notification.Builder mBuilder = new Notification.Builder(this);
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            mBuilder.setChannelId("oandbackup");
+        }
+        startForeground(ID, mBuilder.build());
     }
     @Override
     public IBinder onBind(Intent intent)
