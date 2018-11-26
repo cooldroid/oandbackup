@@ -510,8 +510,16 @@ public class ShellCommands implements CommandHandler.UnexpectedExceptionListener
     }
     public int restoreUserApk(File backupDir, String label, String apk, String ownDataDir)
     {
+        /* according to a comment in the android 8 source code for
+         * /frameworks/base/cmds/pm/src/com/android/commands/pm/Pm.java
+         * pm install is now discouraged / deprecated in favor of cmd
+         * package install.
+         */
+        final String installCmd = Build.VERSION.SDK_INT >= 28 ?
+            "cmd package install" : "pm install";
         // swapBackupDirPath is not needed with pm install
         List<String> commands = new ArrayList<>();
+        final File packageStagingDirectory = new File("/data/local/tmp");
         if(backupDir.getAbsolutePath().startsWith(ownDataDir))
         {
             /**
@@ -526,20 +534,13 @@ public class ShellCommands implements CommandHandler.UnexpectedExceptionListener
             commands.add(busybox + " cp " + swapBackupDirPath(
                 backupDir.getAbsolutePath() + "/" + apk) + " " +
                 swapBackupDirPath(tempPath));
-            commands.add("pm install -r " + tempPath + "/" + apk);
+            commands.add(String.format("%s -r %s/%s", installCmd, tempPath, apk));
             commands.add(busybox + " rm -r " + swapBackupDirPath(tempPath));
         } else {
-            //commands.add("pm install -r " + backupDir.getAbsolutePath() + "/" + apk);
-            String tmpDir = "/data/local/tmp";
-            String tmpApk = tmpDir + "/base.apk";
-            //commands.add(busybox + " tar -C " + tmpDir + " -xzf " + backupDir.getAbsolutePath() + "/" + apk + " && pm install -r " + tmpApk);
-            commands.add(busybox + " gzip -dc " + backupDir.getAbsolutePath() + "/" + apk + " > " + tmpApk);
-            //commands.add("if [ -z $(" + busybox + " tar -tzf " + backupDir.getAbsolutePath() + "/" + apk + ") ]; then " +
-            //        busybox + " gzip -dc " + backupDir.getAbsolutePath() + "/" + apk + " > " + tmpApk + "; else " +
-            //        busybox + " tar -C " + tmpDir + " -xzf " + backupDir.getAbsolutePath() + "/" + apk +
-            //        "; fi");
-            commands.add("pm install -r " + tmpApk);
-            commands.add("rm -f " + tmpApk);
+            String apkDestPath = packageStagingDirectory + "/base.apk";
+            commands.add(busybox + " gzip -dc " + backupDir.getAbsolutePath() + "/" + apk + " > " + apkDestPath);
+            commands.add(String.format("%s -r %s", installCmd, apkDestPath));
+            commands.add(String.format("%s rm -r %s", busybox, apkDestPath));
         }
         List<String> err = new ArrayList<>();
         int ret = CommandHandler.runCmd("su", commands, line -> {},
