@@ -4,6 +4,8 @@
 .gradle
 .idea
 src/main/assets
+src/main/jniLibs/*/dummy.so
 build
 local.properties
 assets
+

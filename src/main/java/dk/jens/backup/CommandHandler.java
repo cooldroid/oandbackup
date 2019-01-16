@@ -15,7 +15,7 @@ import java.util.Collections;
 import java.util.List;
 
 public class CommandHandler {
-    public static int runCmd(String shell, List<String> commands,
+    public int runCmd(String shell, List<String> commands,
             OutputConsumer outHandler, OutputConsumer errorHandler,
             ExceptionConsumer exceptionHandler, UnexpectedExceptionListener exceptionListener) {
         if(commands.size() == 0) {
@@ -59,7 +59,7 @@ public class CommandHandler {
         return code;
     }
 
-    public static int runCmd(String shell, String command,
+    public int runCmd(String shell, String command,
             OutputConsumer outputHandler, OutputConsumer errorHandler,
             ExceptionConsumer exceptionHandler, UnexpectedExceptionListener
             exceptionListener) {

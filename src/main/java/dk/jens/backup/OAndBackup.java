@@ -12,8 +12,8 @@ import android.os.AsyncTask;
 import android.os.Build;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
-import android.support.v4.app.ActivityCompat;
-import android.support.v4.content.ContextCompat;
+import androidx.core.app.ActivityCompat;
+import androidx.core.content.ContextCompat;
 import android.util.Log;
 import android.view.ContextMenu;
 import android.view.ContextMenu.ContextMenuInfo;
@@ -42,7 +42,7 @@ import java.util.ArrayList;
 public class OAndBackup extends BaseActivity
 implements SharedPreferences.OnSharedPreferenceChangeListener, ActionListener
 {
-    public static final String TAG = OAndBackup.class.getSimpleName().toLowerCase();
+    public static final String TAG = Constants.TAG;
     private static final int REQUEST_WRITE_STORAGE = 112;
     static final int BATCH_REQUEST = 1;
     static final int TOOLS_REQUEST = 2;
