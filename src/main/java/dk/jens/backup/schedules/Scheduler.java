@@ -413,6 +413,9 @@ BlacklistListener
         switch(spinner.getSelectedItemPosition())
         {
             case 3:
+                if(parent.findViewById(EXCLUDESYSTEMCHECKBOXID) != null) {
+                    break;
+                }
                 CheckBox cb = new CheckBox(this);
                 cb.setId(EXCLUDESYSTEMCHECKBOXID);
                 cb.setText(getString(R.string.sched_excludeSystemCheckBox));
@@ -424,6 +427,9 @@ BlacklistListener
                 removeSecondaryButton(parent, cb);
                 break;
             case 4:
+                if(parent.findViewById(CUSTOMLISTUPDATEBUTTONID) != null) {
+                    break;
+                }
                 Button bt = new Button(this);
                 bt.setId(CUSTOMLISTUPDATEBUTTONID);
                 bt.setText(getString(R.string.sched_customListUpdateButton));
@@ -826,9 +832,23 @@ BlacklistListener
                     .getScheduleDatabase(scheduler, databasename);
                 final ScheduleDao scheduleDao = scheduleDatabase.scheduleDao();
                 final Schedule schedule = scheduleDao.getSchedule(id);
-                mode.ifPresent(schedule::setMode);
-                submode.ifPresent(schedule::setSubmode);
-                scheduleDao.update(schedule);
+                if(schedule != null) {
+                    mode.ifPresent(schedule::setMode);
+                    submode.ifPresent(schedule::setSubmode);
+                    scheduleDao.update(schedule);
+                } else {
+                    final List<Schedule> schedules = scheduleDao.getAll();
+                    Log.e(TAG, String.format(
+                        "Unable to change mode for %s, couldn't get schedule " +
+                        "from database. Persisted schedules: %s", id, schedules));
+                    scheduler.runOnUiThread(() -> {
+                        final String state = mode.isPresent() ?
+                            "mode" : "submode";
+                        Toast.makeText(scheduler, scheduler.getString(
+                            R.string.error_updating_schedule_mode, state, id),
+                            Toast.LENGTH_LONG).show();
+                    });
+                }
             }
         }
     }

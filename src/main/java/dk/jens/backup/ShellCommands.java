@@ -70,9 +70,6 @@ public class ShellCommands implements CommandHandler.UnexpectedExceptionListener
 
         this.oabUtils = new File(filesDir, AssetsHandler.OAB_UTILS)
             .getAbsolutePath();
-        if(!checkOabUtils()) {
-            legacyMode = true;
-        }
     }
     public ShellCommands(SharedPreferences prefs, File filesDir)
     {
@@ -82,10 +79,6 @@ public class ShellCommands implements CommandHandler.UnexpectedExceptionListener
 
     public boolean isBusybox() {
         return !busybox.equals("toybox");
-    }
-
-    public boolean isOabUtils() {
-        return !legacyMode;
     }
 
     @Override
@@ -760,7 +753,7 @@ public class ShellCommands implements CommandHandler.UnexpectedExceptionListener
         return ret == 0;
     }
     public boolean checkOabUtils() {
-        int ret = commandHandler.runCmd("su", String.format("%s -h", oabUtils),
+        int ret = commandHandler.runCmd("su", String.format("[ -f %s ]", oabUtils),
             line -> {}, line -> writeErrorLog("oab-utils", line),
             e -> Log.e(TAG, "checkOabUtils: ", e), this);
         Log.d(TAG, String.format("checkOabUtils returned %s", ret == 0));
@@ -768,7 +761,7 @@ public class ShellCommands implements CommandHandler.UnexpectedExceptionListener
             final List<String> commands = new ArrayList<>();
             commands.add(String.format("ls -l %s", oabUtils));
             commands.add(String.format("file %s", oabUtils));
-            commandHandler.runCmd("su", commands, line -> {
+            ret = commandHandler.runCmd("su", commands, line -> {
                 Log.i(TAG, "oab-utils" + line);
                 writeErrorLog("oab-utils", line);
             }, line -> {

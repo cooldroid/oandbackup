@@ -13,6 +13,7 @@ import android.widget.EditText;
 import android.widget.LinearLayout;
 import android.widget.Spinner;
 import android.widget.TextView;
+import dk.jens.backup.AbstractInstrumentationTest;
 import dk.jens.backup.Constants;
 import dk.jens.backup.FileCreationHelper;
 import dk.jens.backup.FileReaderWriter;
@@ -48,7 +49,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
 @RunWith(AndroidJUnit4.class)
-public class SchedulerTest {
+public class SchedulerTest extends AbstractInstrumentationTest {
     @Rule
     public ActivityTestRule<Scheduler> schedulerActivityTestRule =
         new ActivityTestRule<>(Scheduler.class, false, true);
@@ -65,7 +66,7 @@ public class SchedulerTest {
         scheduleDao = scheduleDatabase.scheduleDao();
     }
 
-    @Before
+    @After
     public void cleanDatabase() {
         scheduleDao.deleteAll();
         assertThat("clean database", scheduleDao.count(), is(0L));
@@ -73,17 +74,13 @@ public class SchedulerTest {
 
     @Before
     public void removeViews() {
-        schedulerActivityTestRule.getActivity().runOnUiThread(() -> {
-            for(int i = 0; i < schedulerActivityTestRule.getActivity()
-                .viewList.size(); i++) {
-                final View view = schedulerActivityTestRule.getActivity()
-                    .viewList.valueAt(i);
-                final ViewGroup parent = (ViewGroup) view.getParent();
-                if(parent != null) {
-                    parent.removeView(view);
-                }
-            }
-        });
+        final LinearLayout mainLayout = schedulerActivityTestRule
+            .getActivity().findViewById(R.id.linearLayout);
+        schedulerActivityTestRule.getActivity().runOnUiThread(
+            mainLayout::removeAllViews);
+        onView(withId(R.id.ll)).check(doesNotExist());
+        schedulerActivityTestRule.getActivity().viewList.clear();
+        schedulerActivityTestRule.getActivity().totalSchedules = 0;
     }
 
     @After

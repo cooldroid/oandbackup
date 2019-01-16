@@ -6,6 +6,7 @@ import android.content.Context;
 import android.content.DialogInterface;
 import android.content.SharedPreferences;
 import android.preference.PreferenceManager;
+import com.annimon.stream.Optional;
 import dk.jens.backup.AppInfo;
 import dk.jens.backup.Constants;
 import dk.jens.backup.FileCreationHelper;
@@ -18,7 +19,8 @@ import java.util.List;
 
 public class CustomPackageList
 {
-    static ArrayList<AppInfo> appInfoList = OAndBackup.appInfoList;
+    static Optional<ArrayList<AppInfo>> appInfoList = Optional.ofNullable(
+        OAndBackup.appInfoList);
     // for use with schedules
     public static void showList(Activity activity, long number)
     {
@@ -58,14 +60,16 @@ public class CustomPackageList
             .setNegativeButton(R.string.dialogCancel, (dialog, id) -> {})
             .show();
     }
-    private static CharSequence[] collectItems()
+    // TODO: this method (and the others) should probably not be static
+    static CharSequence[] collectItems()
     {
-        ArrayList<String> list = new ArrayList<>();
-        for(AppInfo appInfo : appInfoList)
-        {
-            list.add(appInfo.getPackageName());
-        }
-        return list.toArray(new CharSequence[0]);
+        ArrayList<String> list = new ArrayList<String>();
+        appInfoList.ifPresent(appInfos -> {
+            for(AppInfo appInfo : appInfos) {
+                list.add(appInfo.getPackageName());
+            }
+        });
+        return list.toArray(new CharSequence[list.size()]);
     }
     private static void handleSelectedItems(FileReaderWriter frw, CharSequence[] items, ArrayList<Integer> selected)
     {
