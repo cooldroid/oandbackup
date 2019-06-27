@@ -113,7 +113,7 @@ public class ShellCommands implements CommandHandler.UnexpectedExceptionListener
         String backupAPKCommand = packageApk.isEmpty() ? "" :
                 //busybox + " tar -czf " + backupSubDirPath + "/" + folder + ".apk.gz " + "-C " + apkFile.getParent() + " " + apkFile.getName();
                 busybox + " gzip -ck " + apkFile.getAbsolutePath() + " > " + backupSubDirPath + "/" + folder + ".apk.gz ";
-        String[] excludeFolders = new String[] {"lib", "cache", "app_webview", "app_textures", "code_cache"};
+        String[] excludeFolders = new String[] {"lib", "cache", "app_webview", "app_textures", "code_cache", "files/.Fabric"};
         StringBuilder excludes = new StringBuilder();
         for (String exclFolder: excludeFolders) {
             excludes.append(" --exclude='" + folder + "/" + exclFolder + "'");
