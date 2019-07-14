@@ -8,4 +8,4 @@ src/main/jniLibs/*/dummy.so
 build
 local.properties
 assets
-
+sonarqube-env
