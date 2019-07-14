@@ -290,10 +290,10 @@ public class ShellCommands implements CommandHandler.UnexpectedExceptionListener
             int ret = commandHandler.runCmd("su", commands, line -> {},
                     line -> writeErrorLog(label, line),
                     e -> Log.e(TAG, "doRestore: " + e.toString()), this);
-            if (multiuserEnabled)
-			{
-                disablePackage(packageName);
-            }
+            //if (multiuserEnabled)
+			//{
+            //    disablePackage(packageName);
+            //}
             return ret;
         }
 		else
@@ -511,7 +511,7 @@ public class ShellCommands implements CommandHandler.UnexpectedExceptionListener
          * package install.
          */
         final String installCmd = Build.VERSION.SDK_INT >= 28 ?
-            "cmd package install" : "pm install";
+            "cmd package install --user current" : "pm install --user current";
         // swapBackupDirPath is not needed with pm install
         List<String> commands = new ArrayList<>();
         final File packageStagingDirectory = new File("/data/local/tmp");
