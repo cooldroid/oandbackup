@@ -17,7 +17,7 @@ ext {
     junit_version = "4.12"
     lightweight_stream_api_version = "1.2.1"
     mockito_version = "2.24.0"
-    room_version = "2.1.0-alpha03"
+    room_version = "2.2.5"
     uiautomator_version = "2.2.0"
     lifecycle_version = "2.0.0"
 }
@@ -94,7 +94,7 @@ sonarqube {
 }
 
 android {
-    compileSdkVersion 28
+    compileSdkVersion 29
 
     defaultConfig {
         // https://medium.com/@manas/manage-your-android-app-s-versioncode-versionname-with-gradle-7f9c5dcf09bf
@@ -103,7 +103,7 @@ android {
             versionPath
         versionName = "${versionMajor}.${versionMinor}.${versionPath}"
         minSdkVersion 19
-        targetSdkVersion 28
+        targetSdkVersion 29
         testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
         javaCompileOptions {
             annotationProcessorOptions {
@@ -215,7 +215,7 @@ android {
             if(flavor.name != "universal") {
                 doLast {
                     exec {
-                        executable "./build.sh"
+                        executable "echo"
                         // TODO: determine buildtype to specify if the rust binary
                         // should be built debug or release
                         args = ["release", "--target", "${flavorTargetMap.get(flavor.name)}",
@@ -235,7 +235,7 @@ android {
                     missingBinariesMap.each { entry ->
                         println("missing abi for universal flavour: " + entry.value)
                         exec {
-                            executable "./build.sh"
+                            executable "echo"
                             args = ["release", "--target",
                                 "${flavorTargetMap.get(entry.key)}",
                                 "--abi", "${entry.value}"]
@@ -297,8 +297,8 @@ android.applicationVariants.all { variant ->
 clean {
     doLast {
         abiFlavorMap.values().each {
-            delete "assets/${it}"
-            delete "src/main/assets/${it}"
+            //delete "assets/${it}"
+            //delete "src/main/assets/${it}"
         }
     }
 }
@@ -312,8 +312,8 @@ gradle.taskGraph.whenReady { graph ->
                 Runtime r = Runtime.getRuntime()
                 Process p = r.exec("python3 --version")
                 p.waitFor()
-                pythonExists = p.exitValue() == 0 ? true : false
-            } catch(IOException e) {
+                pythonExists = p.exitValue() == 0
+            } catch(IOException ignored) {
                 logger.warn("no python - not running apk integrity checks")
             }
             if(pythonExists) {

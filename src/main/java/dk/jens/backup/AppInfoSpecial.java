@@ -6,10 +6,10 @@ import android.os.Parcelable;
 public class AppInfoSpecial extends AppInfo
 implements Parcelable
 {
-    String[] files;
+    private String[] files;
     public AppInfoSpecial(String packageName, String label, String versionName, int versionCode)
     {
-        super(packageName, label, versionName, versionCode, System.currentTimeMillis(), "", "", true, true);
+        super(packageName, label, versionName, versionCode, System.currentTimeMillis(), "", "", true, true, false);
     }
     public String[] getFilesList()
     {

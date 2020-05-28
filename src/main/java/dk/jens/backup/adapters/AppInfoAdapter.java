@@ -2,6 +2,7 @@ package dk.jens.backup.adapters;
 
 import android.content.Context;
 import android.graphics.Color;
+import android.graphics.drawable.Drawable;
 import android.text.TextUtils;
 import android.util.DisplayMetrics;
 import android.view.LayoutInflater;
@@ -104,7 +105,18 @@ public class AppInfoAdapter extends ArrayAdapter<AppInfo>
             {
                 viewHolder.icon.setVisibility(View.GONE);
             }
-            viewHolder.label.setText(appInfo.getLabel());
+            TextView labelTextView = viewHolder.label;
+            if (appInfo.isSplitApk()) {
+                labelTextView.setText(appInfo.getLabel() + " **");
+                /*
+                Drawable img = context.getResources().getDrawable(R.drawable.checkmark);
+                img.setBounds(0, 0, img.getIntrinsicWidth() * labelTextView.getMeasuredHeight() / img.getIntrinsicHeight(), labelTextView.getMeasuredHeight());
+                labelTextView.setCompoundDrawables(null, null, img, null);
+                */
+            } else {
+                labelTextView.setText(appInfo.getLabel());
+            }
+
             viewHolder.packageName.setText(appInfo.getPackageName());
             if(appInfo.getLogInfo() != null && (appInfo.getLogInfo().getVersionCode() != 0 && appInfo.getVersionCode() > appInfo.getLogInfo().getVersionCode()))
             {

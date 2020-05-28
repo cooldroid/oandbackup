@@ -22,7 +22,7 @@ public class LogFile implements Parcelable
     private String label, packageName, versionName, sourceDir, dataDir;
     private int versionCode, backupMode;
     private long lastBackupMillis;
-    private boolean encrypted, system;
+    private boolean encrypted, system, splitApk;
     public LogFile(File backupSubDir, String packageName)
     {
         FileReaderWriter frw = new FileReaderWriter(backupSubDir.getAbsolutePath(), packageName + ".log");
@@ -39,6 +39,7 @@ public class LogFile implements Parcelable
             this.versionCode = jsonObject.getInt("versionCode");
             this.encrypted = jsonObject.optBoolean("isEncrypted");
             this.system = jsonObject.optBoolean("isSystem");
+            this.splitApk = jsonObject.optBoolean("isSplitApk", false);
             this.backupMode = jsonObject.optInt("backupMode", AppInfo.MODE_UNSET);
         }
         catch(JSONException e)
@@ -46,7 +47,7 @@ public class LogFile implements Parcelable
             Log.e(TAG, packageName + ": error while reading logfile: " + e.toString());
             this.label = this.packageName = this.versionName = this.sourceDir = this.dataDir = "";
             this.lastBackupMillis = this.versionCode = 0;
-            this.encrypted = this.system = false;
+            this.encrypted = this.system = this.splitApk = false;
             this.backupMode = AppInfo.MODE_UNSET;
         }
     }
@@ -92,6 +93,9 @@ public class LogFile implements Parcelable
     {
         return system;
     }
+    public boolean isSplitApk() {
+        return splitApk;
+    }
     public int getBackupMode()
     {
         return backupMode;
@@ -124,6 +128,7 @@ public class LogFile implements Parcelable
             jsonObject.put("isEncrypted", encrypted);
             jsonObject.put("isSystem", appInfo.isSystem());
             jsonObject.put("backupMode", appInfo.getBackupMode());
+            jsonObject.put("isSplitApk", appInfo.isSplitApk());
             String json = jsonObject.toString(4);
             File outFile = new File(backupSubDir, appInfo.getPackageName() + ".log");
             outFile.createNewFile();
@@ -171,7 +176,7 @@ public class LogFile implements Parcelable
         out.writeInt(versionCode);
         out.writeInt(backupMode);
         out.writeLong(lastBackupMillis);
-        out.writeBooleanArray(new boolean[] {encrypted, system});
+        out.writeBooleanArray(new boolean[] {encrypted, system, splitApk});
     }
     public static final Parcelable.Creator<LogFile> CREATOR = new Parcelable.Creator<LogFile>()
     {
@@ -199,5 +204,6 @@ public class LogFile implements Parcelable
         in.readBooleanArray(bools);
         encrypted = bools[0];
         system = bools[1];
+        splitApk = bools[2];
     }
 }

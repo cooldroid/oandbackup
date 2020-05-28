@@ -72,8 +72,12 @@ public class BackupRestoreHelper
                     //apkRet = shellCommands.restoreSystemApk(backupSubDir,
                     //    appInfo.getLabel(), apk);
                 } else {
-                    apkRet = shellCommands.restoreUserApk(backupSubDir,
-                        appInfo.getLabel(), apk, context.getApplicationInfo().dataDir);
+                    if (appInfo.isSplitApk()) {
+                        apkRet = shellCommands.restoreUserSplitApk(context, appInfo, backupSubDir);
+                    } else {
+                        apkRet = shellCommands.restoreUserApk(backupSubDir,
+                                appInfo.getLabel(), apk, context.getApplicationInfo().dataDir);
+                    }
                 }
                 //if(appInfo.isSystem() && appInfo.getLogInfo() != null)
                 //{
@@ -121,6 +125,7 @@ public class BackupRestoreHelper
         shellCommands.logReturnMessage(context, ret);
         return ret;
     }
+
     public interface OnBackupRestoreListener
     {
         void onBackupRestoreDone();

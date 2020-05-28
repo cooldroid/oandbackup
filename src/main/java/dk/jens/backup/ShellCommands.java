@@ -4,6 +4,9 @@ import android.annotation.SuppressLint;
 import android.app.ActivityManager;
 import android.content.Context;
 import android.content.SharedPreferences;
+import android.content.pm.ApplicationInfo;
+import android.content.pm.PackageManager;
+import android.net.Uri;
 import android.os.Build;
 import android.os.Environment;
 import android.text.TextUtils;
@@ -14,17 +17,29 @@ import org.json.JSONObject;
 import com.topjohnwu.superuser.Shell;
 
 import java.io.BufferedWriter;
+import java.io.ByteArrayInputStream;
 import java.io.DataOutputStream;
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.FilenameFilter;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.io.InputStream;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.Enumeration;
 import java.util.List;
+import java.util.Locale;
+import java.util.Objects;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.zip.CRC32;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipFile;
+import java.util.zip.ZipOutputStream;
 
 public class ShellCommands implements CommandHandler.UnexpectedExceptionListener
 {
@@ -54,8 +69,8 @@ public class ShellCommands implements CommandHandler.UnexpectedExceptionListener
         busybox = prefs.getString(Constants.PREFS_PATH_BUSYBOX, "").trim();
         if(busybox.length() == 0)
         {
-            String[] boxPaths = new String[] {"/sbin/busybox", "/sbin/.core/busybox/busybox",
-                    "/system/xbin/busybox"};
+            String[] boxPaths = new String[] {"/data/adb/magisk/busybox",
+                "/system/xbin/busybox"};
             for(String box : boxPaths) {
                 if(checkBusybox(box)) {
                     busybox = box;
@@ -88,6 +103,7 @@ public class ShellCommands implements CommandHandler.UnexpectedExceptionListener
         errors += t.toString();
     }
 
+    @SuppressLint("NewApi")
     public int doBackup(Context context, File backupSubDir, String label, String packageData, String packageApk, int backupMode)
     {
         String backupSubDirPath = swapBackupDirPath(backupSubDir.getAbsolutePath());
@@ -106,14 +122,29 @@ public class ShellCommands implements CommandHandler.UnexpectedExceptionListener
 
         File fPackageData = new File(packageData);
         String folder = fPackageData.getName();
-        String folderPath = fPackageData.getParentFile().getPath();
+        String folderPath = Objects.requireNonNull(fPackageData.getParentFile()).getPath();
 
-        File apkFile = new File(packageApk);
-        //String backupAPKCommand = packageApk.isEmpty() ? "" : "cp " + packageApk + " " + backupSubDirPath;
-        String backupAPKCommand = packageApk.isEmpty() ? "" :
-                //busybox + " tar -czf " + backupSubDirPath + "/" + folder + ".apk.gz " + "-C " + apkFile.getParent() + " " + apkFile.getName();
-                busybox + " gzip -ck " + apkFile.getAbsolutePath() + " > " + backupSubDirPath + "/" + folder + ".apk.gz ";
-        String[] excludeFolders = new String[] {"lib", "cache", "app_webview", "app_textures", "code_cache", "files/.Fabric"};
+        boolean hasSplits = false;
+        ApplicationInfo applicationInfo = null;
+        try {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                applicationInfo = context.getPackageManager().getApplicationInfo(folder,0);
+                hasSplits = (applicationInfo.splitPublicSourceDirs != null && applicationInfo.splitPublicSourceDirs.length > 0);
+            }
+        } catch (PackageManager.NameNotFoundException e) {
+            e.printStackTrace();
+        }
+
+        String backupAPKCommand = null;
+        if (!hasSplits) {
+            File apkFile = new File(packageApk);
+            //String backupAPKCommand = packageApk.isEmpty() ? "" : "cp " + packageApk + " " + backupSubDirPath;
+            backupAPKCommand = packageApk.isEmpty() ? "" :
+                    //busybox + " tar -czf " + backupSubDirPath + "/" + folder + ".apk.gz " + "-C " + apkFile.getParent() + " " + apkFile.getName();
+                    busybox + " gzip -ck " + apkFile.getAbsolutePath() + " > " + backupSubDirPath + "/" + folder + ".apk.gz ";
+        }
+        String[] excludeFolders = new String[] {"lib", "cache", "app_webview", "app_textures", "app_optimized", "app_google_tagmanager",
+                "no_backup", "code_cache", "files/.Fabric"};
         StringBuilder excludes = new StringBuilder();
         for (String exclFolder: excludeFolders) {
             excludes.append(" --exclude='" + folder + "/" + exclFolder + "'");
@@ -124,14 +155,22 @@ public class ShellCommands implements CommandHandler.UnexpectedExceptionListener
         switch(backupMode)
         {
             case AppInfo.MODE_APK:
-                commands.add(backupAPKCommand);
+                if (hasSplits) {
+                    executeWithPacking(context, applicationInfo, backupSubDirPath + "/" + folder + ".apks");
+                } else {
+                    commands.add(backupAPKCommand);
+                }
                 break;
             case AppInfo.MODE_DATA:
                 commands.add(backupDataCommand);
                 break;
             default: // defaults to MODE_BOTH
                 commands.add(backupDataCommand);
-                commands.add(backupAPKCommand);
+                if (hasSplits) {
+                    executeWithPacking(context, applicationInfo, backupSubDirPath + "/" + folder + ".apks");
+                } else {
+                    commands.add(backupAPKCommand);
+                }
                 break;
         }
         File externalFilesDir = getExternalFilesDirPath(context, packageData);
@@ -188,7 +227,8 @@ public class ShellCommands implements CommandHandler.UnexpectedExceptionListener
             if((!prefs.getBoolean("followSymlinks", true) &&
                     (line.contains("lib") && ((line.contains("not permitted")
                     && line.contains("symlink"))) || line.contains("No such file or directory")))
-                    || (line.contains("mozilla") && line.contains("/lock")))
+                    || (line.contains("mozilla") && line.contains("/lock"))
+                    || (line.equals("no commands to run")))
                 ret = 0;
         } else {
             for (String line : errors)
@@ -227,6 +267,59 @@ public class ShellCommands implements CommandHandler.UnexpectedExceptionListener
         if (!prefs.getBoolean(Constants.PREFS_ENABLECRYPTO, false))
             Crypto.cleanUpEncryptedFiles(backupSubDir, packageApk, packageData, backupMode, prefs.getBoolean("backupExternalFiles", false), prefs.getBoolean("backupExpansionFiles", false));
         return ret;
+    }
+
+    @SuppressLint("NewApi")
+    private void executeWithPacking(Context context, ApplicationInfo applicationInfo, String destination) {
+        try (ZipOutputStream zipOutputStream = new ZipOutputStream(new FileOutputStream(destination))) {
+            List<File> apkFiles = new ArrayList<>();
+            apkFiles.add(new File(applicationInfo.publicSourceDir));
+            if (applicationInfo.splitPublicSourceDirs != null) {
+                for (String splitPath : applicationInfo.splitPublicSourceDirs)
+                    apkFiles.add(new File(splitPath));
+            }
+            //APKs
+            for (File apkFile : apkFiles) {
+                zipOutputStream.setMethod(ZipOutputStream.STORED);
+
+                ZipEntry zipEntry = new ZipEntry(apkFile.getName());
+                zipEntry.setMethod(ZipEntry.STORED);
+                zipEntry.setCompressedSize(apkFile.length());
+                zipEntry.setSize(apkFile.length());
+                zipEntry.setCrc(ShellCommands.calculateFileCrc32(apkFile));
+
+                zipOutputStream.putNextEntry(zipEntry);
+
+                try (FileInputStream apkInputStream = new FileInputStream(apkFile)) {
+                    byte[] buffer = new byte[1024 * 512];
+                    int read;
+
+                    while ((read = apkInputStream.read(buffer)) > 0) {
+                        zipOutputStream.write(buffer, 0, read);
+                    }
+                }
+                zipOutputStream.closeEntry();
+            }
+        } catch (IOException e) {
+            writeErrorLog(applicationInfo.name, e.toString());
+        }
+    }
+
+    public static long calculateFileCrc32(File file) throws IOException {
+        return calculateCrc32(new FileInputStream(file));
+    }
+
+    public static long calculateCrc32(InputStream inputStream) throws IOException {
+        try (InputStream in = inputStream) {
+            CRC32 crc32 = new CRC32();
+            byte[] buffer = new byte[1024 * 1024];
+            int read;
+
+            while ((read = in.read(buffer)) > 0)
+                crc32.update(buffer, 0, read);
+
+            return crc32.getValue();
+        }
     }
 
     private long folderSize(File directory) {
@@ -555,6 +648,54 @@ public class ShellCommands implements CommandHandler.UnexpectedExceptionListener
         {
             return ret;
         }
+    }
+
+    int restoreUserSplitApk(Context context, AppInfo appInfo, File backupDir) {
+        List<String> err = new ArrayList<>();
+
+        final String pmPrefix = Build.VERSION.SDK_INT >= 28 ? "cmd package ": "pm ";
+        String installCreateCmd = pmPrefix + "install-create --user current -r -i " + makeLiteral(BuildConfig.APPLICATION_ID);
+        final int[] sessionId = new int[1];
+        int ret = commandHandler.runCmd("su", installCreateCmd, line -> {
+                    if (line != null) { sessionId[0] = extractSessionId(line); }
+                },
+                err::add, e -> Log.e(TAG, "restoreUserSplitApk: ", e), this);
+
+        try (ZipFile zipFile = new ZipFile(backupDir.getAbsolutePath() + "/" + appInfo.getPackageName() + ".apks")) {
+            Enumeration<? extends ZipEntry> zipEntries = zipFile.entries();
+            int currentApkFile = 0;
+            while (zipEntries.hasMoreElements()) {
+                ZipEntry nextEntry = zipEntries.nextElement();
+                //zipFile.getInputStream(zipEntries.nextElement());
+                int retCode = Shell.su(pmPrefix + "install-write -S " + nextEntry.getSize() + " "
+                        + sessionId[0] + " "  + String.format(Locale.getDefault(), "%d.apk", currentApkFile++) + " - ")
+                        .add(zipFile.getInputStream(nextEntry)).exec().getCode();
+            }
+        } catch (IOException ioex) {
+            ShellCommands.writeErrorLog(appInfo.getPackageName(), ioex.getMessage());
+        }
+
+        String installCommitCmd = pmPrefix + "install-commit " +  sessionId[0];
+        ret = commandHandler.runCmd("su", installCommitCmd, line -> {},
+                err::add, e -> Log.e(TAG, "restoreUserSplitApk: ", e), this);
+
+        return ret;
+    }
+
+    private Integer extractSessionId(String commandResult) {
+        try {
+            Pattern sessionIdPattern = Pattern.compile("(\\d+)");
+            Matcher sessionIdMatcher = sessionIdPattern.matcher(commandResult);
+            sessionIdMatcher.find();
+            return Integer.parseInt(sessionIdMatcher.group(1));
+        } catch (Exception e) {
+            Log.w(TAG, commandResult, e);
+            return null;
+        }
+    }
+
+    private String makeLiteral(String arg) {
+        return "'" + arg.replace("'", "'\\''") + "'";
     }
 
     public int restoreSystemApk(File backupDir, String label, String apk) {

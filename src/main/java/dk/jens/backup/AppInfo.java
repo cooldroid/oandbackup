@@ -11,14 +11,14 @@ implements Comparable<AppInfo>, Parcelable
     private String label, packageName, versionName, sourceDir, dataDir;
     private int versionCode, backupMode;
     private long lastUpdateTime;
-    private boolean system, installed, checked, disabled;
+    private boolean system, installed, checked, disabled, splitApk;
     public Bitmap icon;
     public static final int MODE_UNSET = 0;
     public static final int MODE_APK = 1;
     public static final int MODE_DATA = 2;
     public static final int MODE_BOTH = 3;
 
-    public AppInfo(String packageName, String label, String versionName, int versionCode, long lastUpdateTime, String sourceDir, String dataDir, boolean system, boolean installed)
+    public AppInfo(String packageName, String label, String versionName, int versionCode, long lastUpdateTime, String sourceDir, String dataDir, boolean system, boolean installed, boolean splitApk)
     {
         this.label = label;
         this.packageName = packageName;
@@ -29,6 +29,7 @@ implements Comparable<AppInfo>, Parcelable
         this.dataDir = dataDir;
         this.system = system;
         this.installed = installed;
+        this.splitApk = splitApk;
         this.backupMode = MODE_UNSET;
     }
     public String getPackageName()
@@ -103,6 +104,10 @@ implements Comparable<AppInfo>, Parcelable
     {
         return installed;
     }
+    public boolean isSplitApk()
+    {
+        return splitApk;
+    }
     // list of single files used by special backups - only for compatibility now
     public String[] getFilesList()
     {
@@ -136,7 +141,7 @@ implements Comparable<AppInfo>, Parcelable
         out.writeInt(versionCode);
         out.writeLong(lastUpdateTime);
         out.writeInt(backupMode);
-        out.writeBooleanArray(new boolean[] {system, installed, checked});
+        out.writeBooleanArray(new boolean[] {system, installed, checked, splitApk});
         out.writeParcelable(icon, flags);
     }
     public static final Parcelable.Creator<AppInfo> CREATOR = new Parcelable.Creator<AppInfo>()
@@ -166,6 +171,7 @@ implements Comparable<AppInfo>, Parcelable
         system = bools[0];
         installed = bools[1];
         checked = bools[2];
+        splitApk = bools[3];
         icon = in.readParcelable(getClass().getClassLoader());
     }
 }
