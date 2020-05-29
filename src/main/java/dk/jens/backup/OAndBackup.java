@@ -33,6 +33,8 @@ import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 import com.annimon.stream.IntStream;
 import com.annimon.stream.Optional;
+import com.topjohnwu.superuser.Shell;
+
 import dk.jens.backup.adapters.AppInfoAdapter;
 import dk.jens.backup.schedules.Scheduler;
 import dk.jens.backup.tasks.BackupTask;
@@ -79,7 +81,16 @@ implements SharedPreferences.OnSharedPreferenceChangeListener, ActionListener
     ShellCommands shellCommands;
     HandleMessages handleMessages;
     Sorter sorter;
-    
+
+    static {
+        /* Shell.Config methods shall be called before any shell is created
+         * This is the why in this example we call it in a static block
+         * The followings are some examples, check Javadoc for more details */
+        Shell.Config.setFlags(Shell.FLAG_REDIRECT_STDERR);
+        Shell.Config.verboseLogging(BuildConfig.DEBUG);
+        Shell.Config.setTimeout(10);
+    }
+
     @Override
     public void onCreate(Bundle savedInstanceState)
     {

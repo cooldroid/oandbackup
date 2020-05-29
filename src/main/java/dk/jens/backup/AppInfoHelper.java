@@ -12,6 +12,7 @@ import android.os.Build;
 import android.util.Log;
 
 import java.io.File;
+import java.io.FilenameFilter;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -108,7 +109,7 @@ public class AppInfoHelper
     {
         if(backupDir != null && backupDir.exists())
         {
-            String[] files = backupDir.list();
+            String[] files = backupDir.list((current, name) -> new File(current, name).isDirectory());
             if(files != null)
             {
                 Arrays.sort(files);

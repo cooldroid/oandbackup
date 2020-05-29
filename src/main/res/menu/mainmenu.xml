@@ -23,10 +23,10 @@
             <group android:id="@+id/filterGroup"
                 android:checkableBehavior="single">
                 <item android:id="@+id/showAll"
-                    android:title="@string/showAll"
-                    android:checked="true" />
+                    android:title="@string/showAll" />
                 <item android:id="@+id/showOnlyUser"
-                    android:title="@string/showOnlyUser" />
+                    android:title="@string/showOnlyUser"
+                    android:checked="true" />
                 <item android:id="@+id/showOnlySystem"
                     android:title="@string/showOnlySystem" />
             </group>

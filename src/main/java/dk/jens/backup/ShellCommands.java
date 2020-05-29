@@ -687,7 +687,7 @@ public class ShellCommands implements CommandHandler.UnexpectedExceptionListener
             Pattern sessionIdPattern = Pattern.compile("(\\d+)");
             Matcher sessionIdMatcher = sessionIdPattern.matcher(commandResult);
             sessionIdMatcher.find();
-            return Integer.parseInt(sessionIdMatcher.group(1));
+            return Integer.parseInt(Objects.requireNonNull(sessionIdMatcher.group(1)));
         } catch (Exception e) {
             Log.w(TAG, commandResult, e);
             return null;

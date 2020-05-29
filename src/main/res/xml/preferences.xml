@@ -12,12 +12,14 @@
         android:title="@string/prefs_timestamp"
         android:defaultValue="true"
         />
+    <!--
     <CheckBoxPreference
         android:key="copySelfApk"
         android:title="@string/prefs_copySelfApk"
         android:summary="@string/prefs_summaryCopySelfApk"
         android:defaultValue="false"
         />
+     -->
     <CheckBoxPreference
         android:key="acquireWakelock"
         android:title="@string/prefs_acquireWakelock"
