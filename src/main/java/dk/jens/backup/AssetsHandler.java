@@ -11,6 +11,7 @@ import java.io.InputStream;
 
 public class AssetsHandler {
     public static final String OAB_UTILS = "oab-utils";
+    public static final String BUSYBOX = "busybox";
 
     /**
      * copy oab-utils asset to private storage
@@ -21,12 +22,34 @@ public class AssetsHandler {
     public static void copyOabutils(Context context)
             throws AssetsHandlerException {
         final String assetPath = new File(getAbi(), OAB_UTILS).toString();
-        copyAsset(context, assetPath, OAB_UTILS);
         final File file = new File(context.getFilesDir(), OAB_UTILS);
-        if(!file.setExecutable(true)) {
-            final String msg = String.format("error making %s executable",
-                AssetsHandler.OAB_UTILS);
-            throw new AssetsHandlerException(msg);
+        if (!(file.exists() && file.canExecute())) {
+            copyAsset(context, assetPath, OAB_UTILS);
+            if(!file.setExecutable(true, false)) {
+                final String msg = String.format("error making %s executable",
+                        AssetsHandler.OAB_UTILS);
+                throw new AssetsHandlerException(msg);
+            }
+        }
+    }
+
+    /**
+     * copy busybox asset to private storage
+     * @param context application context
+     * @throws AssetsHandlerException on error copying asset or error
+     * making the resulting binary executable
+     */
+    public static void copyBusybox(Context context)
+            throws AssetsHandlerException {
+        final String assetPath = new File(getAbi(), BUSYBOX).toString();
+        final File file = new File(context.getFilesDir(), BUSYBOX);
+        if (!(file.exists() && file.canExecute())) {
+            copyAsset(context, assetPath, BUSYBOX);
+            if(!file.setExecutable(true, false)) {
+                final String msg = String.format("error making %s executable",
+                        AssetsHandler.BUSYBOX);
+                throw new AssetsHandlerException(msg);
+            }
         }
     }
 

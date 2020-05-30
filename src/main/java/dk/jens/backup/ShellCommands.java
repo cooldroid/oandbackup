@@ -6,24 +6,20 @@ import android.content.Context;
 import android.content.SharedPreferences;
 import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageManager;
-import android.net.Uri;
 import android.os.Build;
 import android.os.Environment;
 import android.text.TextUtils;
 import android.util.Log;
-import org.json.JSONException;
-import org.json.JSONObject;
 
 import com.topjohnwu.superuser.Shell;
 
+import org.json.JSONException;
+import org.json.JSONObject;
+
 import java.io.BufferedWriter;
-import java.io.ByteArrayInputStream;
-import java.io.DataOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
-import java.io.FilenameFilter;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
@@ -46,14 +42,15 @@ public class ShellCommands implements CommandHandler.UnexpectedExceptionListener
     final static String TAG = OAndBackup.TAG;
     final static String EXTERNAL_FILES = "external_files";
     final static String EXPANSION_FILES = "expansion_files";
+    public static boolean IS_SUPER_USER = false;
 	
     CommandHandler commandHandler = new CommandHandler();
 
     private final String oabUtils;
+    private String busybox;
     private boolean legacyMode;
 
     SharedPreferences prefs;
-    String busybox;
     ArrayList<String> users;
     private static String errors = "";
     boolean multiuserEnabled;
@@ -67,33 +64,33 @@ public class ShellCommands implements CommandHandler.UnexpectedExceptionListener
         this.users = users;
         this.prefs = prefs;
         busybox = prefs.getString(Constants.PREFS_PATH_BUSYBOX, "").trim();
-        if(busybox.length() == 0)
-        {
-            String[] boxPaths = new String[] {"/data/adb/magisk/busybox",
-                "/system/xbin/busybox"};
-            for(String box : boxPaths) {
-                if(checkBusybox(box)) {
-                    busybox = box;
-                    break;
+        if(busybox.length() == 0) {
+            this.busybox = new File(filesDir, AssetsHandler.BUSYBOX).getAbsolutePath();
+            if (!checkBusybox()) {
+                String[] boxPaths = new String[]{"/data/adb/magisk/busybox",
+                        "/system/xbin/busybox"};
+                for (String box : boxPaths) {
+                    if (checkBusyboxWithRoot(box)) {
+                        this.busybox = box;
+                        break;
+                    }
+                    // fallback:
+                    this.busybox = Build.VERSION.SDK_INT >= 23 ? "toybox" : AssetsHandler.BUSYBOX;
                 }
-                // fallback:
-                busybox = Build.VERSION.SDK_INT >= 23 ? "toybox" : "busybox";
             }
         }
         this.users = getUsers();
         multiuserEnabled = this.users != null && this.users.size() > 1;
-
-        this.oabUtils = new File(filesDir, AssetsHandler.OAB_UTILS)
-            .getAbsolutePath();
+        this.oabUtils = new File(filesDir, AssetsHandler.OAB_UTILS).getAbsolutePath();
+        checkOabUtils();
     }
+
     public ShellCommands(SharedPreferences prefs, File filesDir)
     {
         this(prefs, null, filesDir);
         // initialize with userlist as null. getUsers checks if list is null and simply returns it if isn't and if its size is greater than 0.
-    }
-
-    public boolean isBusybox() {
-        return !busybox.equals("toybox");
+        this.busybox = prefs.getString(Constants.PREFS_PATH_BUSYBOX, "").trim();
+        checkBusybox();
     }
 
     @Override
@@ -881,35 +878,32 @@ public class ShellCommands implements CommandHandler.UnexpectedExceptionListener
     }
     public static boolean checkSuperUser()
     {
-            return Shell.rootAccess();
+        if (IS_SUPER_USER || Shell.rootAccess()) {
+            IS_SUPER_USER = true;
+        }
+        return IS_SUPER_USER;
     }
-    public boolean checkBusybox() {
-        return checkBusybox(busybox);
-    }
-    public boolean checkBusybox(String busyboxPath)
+
+    public boolean checkBusyboxWithRoot(String busyboxPath)
     {
         int ret = commandHandler.runCmd("sh", busyboxPath,
             line -> {}, line -> writeErrorLog("busybox", line),
             e -> Log.e(TAG, "checkBusybox: ", e), this);
         return ret == 0;
     }
-    public boolean checkOabUtils() {
-        int ret = commandHandler.runCmd("su", String.format("[ -f %s ]", oabUtils),
-            line -> {}, line -> writeErrorLog("oab-utils", line),
-            e -> Log.e(TAG, "checkOabUtils: ", e), this);
-        Log.d(TAG, String.format("checkOabUtils returned %s", ret == 0));
-        if(ret != 0) {
-            final List<String> commands = new ArrayList<>();
-            commands.add(String.format("ls -l %s", oabUtils));
-            commands.add(String.format("file %s", oabUtils));
-            ret = commandHandler.runCmd("su", commands, line -> {
-                Log.i(TAG, "oab-utils" + line);
-                writeErrorLog("oab-utils", line);
-            }, line -> {
-                Log.e(TAG, "oab-utils" + line);
-                writeErrorLog("oab-utils", line);
-            }, e -> Log.e(TAG, "checkOabUtils (ret != 0): ", e), this);
-        }
+
+    private boolean checkOabUtils() {
+        return checkAssets(this.oabUtils);
+    }
+
+    private boolean checkBusybox() {
+        return checkAssets(this.busybox);
+    }
+
+    private boolean checkAssets(String asset) {
+        int ret = commandHandler.runCmd("sh", "[ -f " + asset + " ]",
+                line -> {}, line -> writeErrorLog(asset, line),
+                e -> Log.e(TAG, "checkAssets: ", e), this);
         return ret == 0;
     }
     public void copyNativeLibraries(File apk, File outputDir, String packageName)

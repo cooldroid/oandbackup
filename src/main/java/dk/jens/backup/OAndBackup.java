@@ -1,6 +1,7 @@
 package dk.jens.backup;
 
 import android.Manifest;
+import android.annotation.SuppressLint;
 import android.app.AlarmManager;
 import android.app.AlertDialog;
 import android.app.PendingIntent;
@@ -213,8 +214,9 @@ implements SharedPreferences.OnSharedPreferenceChangeListener, ActionListener
 
     // The users parameter should ideally be List instead of ArrayList
     // but the following methods expect ArrayList.
+    @SuppressLint("RestrictedApi")
     private long startUiThread(boolean checked, int firstVisiblePosition,
-            ArrayList<String> users) {
+                               ArrayList<String> users) {
         final Thread initThread = new Thread(new InitRunnable(checked,
             firstVisiblePosition, users));
         uiThread = Optional.of(initThread);
@@ -589,7 +591,6 @@ implements SharedPreferences.OnSharedPreferenceChangeListener, ActionListener
         else if(key.equals(Constants.PREFS_PATH_BUSYBOX))
         {
             shellCommands = new ShellCommands(preferences, getFilesDir());
-            checkBusybox();
         }
         else if(key.equals(Constants.PREFS_TIMESTAMP))
         {
@@ -640,9 +641,10 @@ implements SharedPreferences.OnSharedPreferenceChangeListener, ActionListener
             .setNegativeButton(R.string.dialogCancel, (dialog, which) -> {})
             .show();
     }
+    /*
     public void checkBusybox()
     {
-        if(!shellCommands.isBusybox())
+        if(!shellCommands.checkBusybox())
             Utils.showWarning(this, "", getString(R.string.busyboxProblem));
     }
     private void checkOabUtils() {
@@ -650,6 +652,7 @@ implements SharedPreferences.OnSharedPreferenceChangeListener, ActionListener
             Utils.showWarning(this, "", getString(R.string.oabUtilsProblem));
         }
     }
+     */
     private class InitRunnable implements Runnable
     {
         boolean checked;
@@ -684,10 +687,9 @@ implements SharedPreferences.OnSharedPreferenceChangeListener, ActionListener
                 {
                     Utils.showWarning(OAndBackup.this, "", getString(R.string.noSu));
                 }
-                checkBusybox();
-                handleMessages.changeMessage("", getString(
-                    R.string.oabUtilsCheck));
-                checkOabUtils();
+                //checkBusybox();
+                //handleMessages.changeMessage("", getString(R.string.oabUtilsCheck));
+                //checkOabUtils();
                 handleMessages.endMessage();
             }
 
@@ -731,6 +733,7 @@ implements SharedPreferences.OnSharedPreferenceChangeListener, ActionListener
         public Context doInBackground(Context... contexts) {
             try {
                 AssetsHandler.copyOabutils(contexts[0]);
+                AssetsHandler.copyBusybox(contexts[0]);
             } catch (AssetsHandler.AssetsHandlerException e) {
                 throwable = e;
             }

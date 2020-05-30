@@ -23,10 +23,10 @@ public class Sorter
         this.prefsEdit = prefs.edit();
         try
         {
-            oldBackups = Integer.valueOf(prefs.getString(
+            oldBackups = Integer.parseInt(prefs.getString(
                 Constants.PREFS_OLDBACKUPS, "0"));
         }
-        catch(NumberFormatException e)
+        catch(NumberFormatException ignored)
         {}
     }
     static
