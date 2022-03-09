@@ -7,9 +7,16 @@ utilbox=$1
 shift
 
 archive=-
+compress=
 exclude=
 
 while [[ $1 == --* ]]; do
+
+  if [[ $1 == --compress ]]; then
+    compress="z"
+    shift
+    continue
+  fi
 
   if [[ $1 == --archive ]]; then
     shift
@@ -29,6 +36,10 @@ while [[ $1 == --* ]]; do
 
 done
 
+tarcmd="$utilbox tar"
+if tar --version | grep -q "GNU tar" ; then
+  tarcmd="$(which tar) --ignore-failed-read"
+fi
 
 if [[ $command == "create" ]]; then
 
@@ -38,7 +49,7 @@ if [[ $command == "create" ]]; then
   #cd $dir && (
   #  ($utilbox ls -1A | $utilbox tar -c -f "$archive" $exclude -T -) || (dd if=/dev/zero bs=1024c count=1 2>/dev/null)
   #)
-  $utilbox tar -c -f "$archive" -C "$dir" $exclude .
+  $tarcmd -c"$compress" -f "$archive" -C "$dir" $exclude .
 
   exit $?
 
@@ -47,7 +58,7 @@ elif [[ $command == "extract" ]]; then
   dir=$1
   shift
 
-  $utilbox tar -x -f "$archive" -C "$dir" $exclude
+  $tarcmd -x"$compress" -f "$archive" -C "$dir" $exclude
 
   exit $?
 fi

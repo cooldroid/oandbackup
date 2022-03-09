@@ -637,13 +637,13 @@ class ShellHandler {
 
         class ShRunnableShellCommand : RunnableShellCommand {
             override fun runCommand(command: String): Shell.Job {
-                return Shell.sh(command)
+                return Shell.cmd(command)
             }
         }
 
         class SuRunnableShellCommand : RunnableShellCommand {
             override fun runCommand(command: String): Shell.Job {
-                return Shell.su(command)
+                return Shell.cmd(command)
             }
         }
 
