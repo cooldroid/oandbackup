@@ -539,7 +539,7 @@ open class RestoreAppAction(context: Context, work: AppActionWork?, shell: Shell
                 throw RestoreFailedException("Backup archive at $archive is missing")
             }
             try {
-                openArchiveFile(archive, isCompressed, isEncrypted, iv).use { archiveStream ->
+                //openArchiveFile(archive, isCompressed, isEncrypted, iv).use { archiveStream ->
 
                     targetDir.mkdirs()  // in case it doesn't exist
 
@@ -554,11 +554,28 @@ open class RestoreAppAction(context: Context, work: AppActionWork?, shell: Shell
                     val excludeCache = findAssetFile(ShellHandler.EXCLUDE_CACHE_FILE).toString()
 
                     var options = ""
+                    if (isCompressed) {
+                        options += " --compress"
+                    }
+                    val fullFilePath = archive.getPath(context, archive.uri!!)
+                    options += " --archive ${fullFilePath?.let { quote(it) }}"
                     options += " --exclude " + quote(exclude)
                     if (OABX.prefFlag(PREFS_EXCLUDECACHE, true)
                     ) {
                         options += " --exclude " + quote(excludeCache)
                     }
+                    val shCmd = "sh $qTarScript extract $utilBoxQ $options ${quote(targetDir)}"
+                    val shellResult = runAsRoot(shCmd)
+                    val errLines = shellResult.err.filterNot { line ->
+                        line.isBlank()
+                                || line.contains("tar: unknown file type") // e.g. socket 140000
+                    }
+                    if (errLines.isNotEmpty()) {
+                        val errFiltered = errLines.joinToString("\n")
+                        Timber.i(errFiltered)
+                        throw ScriptException(errFiltered)
+                    }
+/*
                     var suOptions = "--mount-master"
 
                     val cmd =
@@ -591,7 +608,8 @@ open class RestoreAppAction(context: Context, work: AppActionWork?, shell: Shell
                         Timber.i(errFiltered)
                         throw ScriptException(errFiltered)
                     }
-                }
+*/
+                //}
             } catch (e: FileNotFoundException) {
                 throw RestoreFailedException("Backup archive at $archive is missing", e)
             } catch (e: IOException) {

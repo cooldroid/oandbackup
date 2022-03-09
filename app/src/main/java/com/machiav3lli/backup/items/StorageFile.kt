@@ -3,6 +3,7 @@ package com.machiav3lli.backup.items
 import android.content.Context
 import android.database.Cursor
 import android.net.Uri
+import android.os.Environment
 import android.provider.DocumentsContract
 import androidx.core.content.FileProvider
 import androidx.core.database.getIntOrNull
@@ -494,6 +495,30 @@ open class StorageFile {
         } catch (e: FileNotFoundException) {
         } catch (e: Throwable) {
             LogsHandler.unhandledException(e, _uri)
+        }
+        return null
+    }
+
+    fun getPath(context: Context?, uri: Uri): String? {
+        // DocumentProvider
+        if (DocumentsContract.isDocumentUri(context, uri)) {
+            // ExternalStorageProvider
+            if ("com.android.externalstorage.documents" == uri.authority) {
+                val docId = DocumentsContract.getDocumentId(uri)
+                val split = docId.split(":").toTypedArray()
+                val type = split[0]
+                // This is for checking Main Memory
+                return if ("primary".equals(type, ignoreCase = true)) {
+                    if (split.size > 1) {
+                        Environment.getExternalStorageDirectory().toString() + File.separator + split[1]
+                    } else {
+                        Environment.getExternalStorageDirectory().toString()
+                    }
+                    // This is for checking SD Card
+                } else {
+                    "storage" + File.separator + docId.replace(":", File.separator)
+                }
+            }
         }
         return null
     }

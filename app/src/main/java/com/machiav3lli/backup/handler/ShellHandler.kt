@@ -601,13 +601,13 @@ class ShellHandler {
 
         class ShRunnableShellCommand : RunnableShellCommand {
             override fun runCommand(vararg commands: String?): Shell.Job {
-                return Shell.sh(*commands)
+                return Shell.cmd(*commands)
             }
         }
 
         class SuRunnableShellCommand : RunnableShellCommand {
             override fun runCommand(vararg commands: String?): Shell.Job {
-                return Shell.su(*commands)
+                return Shell.cmd(*commands)
             }
         }
 
@@ -623,12 +623,19 @@ class ShellHandler {
             // and keeps quiet
             Timber.d("Running Command: ${commands.joinToString(" ; ")}")
             val stdout: List<String> = arrayListOf()
-            val stderr: List<String> = arrayListOf()
+            var stderr: List<String> = arrayListOf()
             val result = shell.runCommand(*commands).to(stdout, stderr).exec()
             Timber.d("Command(s) ${commands.joinToString(" ; ")} ended with ${result.code}")
-            if (!result.isSuccess)
+            if (result.err.isNotEmpty()) {
+                stderr = result.err.filterNot { line ->
+                    line.isBlank()
+                            || line.contains("tar: unknown file type") // e.g. socket 140000
+                }
+            }
+            if (stderr.isEmpty())
+                return result
+            else (!result.isSuccess)
                 throw ShellCommandFailedException(result, commands)
-            return result
         }
 
         @Throws(ShellCommandFailedException::class)

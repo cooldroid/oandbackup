@@ -28,7 +28,7 @@ val vComposeCompiler = "1.2.0"
 val vCompose = "1.2.0-rc03"
 val vRoom = "2.5.0-alpha02"
 val vNavigation = "2.5.0"
-val vLibsu = "3.2.1"
+val vLibsu = "5.0.2"
 
 android {
     namespace = "com.machiav3lli.backup"
