@@ -15,8 +15,9 @@ ext {
     espresso_version = "3.0.2"
     hamcrest_version = '2.2'
     junit_version = '4.13.2'
-    lightweight_stream_api_version = "1.2.1"
+    lightweight_stream_api_version = "1.2.2"
     mockito_version = '4.4.0'
+    openpgp_api_version = "v11"
     room_version = "2.4.2"
     uiautomator_version = "2.2.0"
     lifecycle_version = '2.4.1'
@@ -24,14 +25,15 @@ ext {
 
 dependencies {
     implementation 'androidx.legacy:legacy-support-core-utils:1.0.0'
-    implementation 'com.github.open-keychain:openpgp-api:v11'
     implementation 'com.github.topjohnwu.libsu:core:4.0.0'
+    implementation group: "com.github.open-keychain", name: "openpgp-api",
+        version: "$openpgp_api_version"
     implementation group: "androidx.room", name: "room-runtime",
         version: "$room_version"
     annotationProcessor group: "androidx.room", name: "room-compiler",
         version: "$room_version"
     implementation group: "com.annimon", name: "stream",
-        version: '1.2.2'
+        version: "$lightweight_stream_api_version"
 
     testImplementation group: "org.hamcrest", name: "hamcrest-core",
         version: hamcrest_version

@@ -26,18 +26,19 @@ public class Crypto
     private boolean successFlag, errorFlag, testFlag;
     private File[] files;
     private long[] keyIds;
-    private String[] userIds;
-    private String provider;
-    public Crypto(SharedPreferences prefs)
+    private final String[] userIds;
+    private final String provider;
+    public Crypto(String userIds, String provider)
     {
-        userIds = prefs.getString("cryptoUserIds", "").split(",");
+        this.userIds = userIds.split(",");
+
         // openkeychain doesn't like it if the string is empty
-        if(userIds.length == 1 && userIds[0].length() == 0)
-            userIds[0] = "dummy";
+        if(this.userIds.length == 1 && this.userIds[0].length() == 0)
+            this.userIds[0] = "dummy";
         else
-            for(int i = 0; i < userIds.length; i++)
-                userIds[i] = userIds[i].trim();
-        provider = prefs.getString("openpgpProviderList", "org.sufficientlysecure.keychain");
+            for(int i = 0; i < this.userIds.length; i++)
+                this.userIds[i] = this.userIds[i].trim();
+        this.provider = provider;
     }
     public void testResponse(Context context, Intent intent, long[] keyIds)
     {
@@ -286,7 +287,7 @@ public class Crypto
         // to be used if the openpgp provider crashes so there isn't any usable callback
         logError("Crypto error set. Did the openpgp provider crash?");
     }
-    private boolean waitForServiceBound()
+    boolean waitForServiceBound()
     {
         int i = 0;
         while(service.getService() == null)

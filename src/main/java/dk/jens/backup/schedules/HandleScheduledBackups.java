@@ -134,8 +134,12 @@ public class HandleScheduledBackups
                 Crypto crypto = null;
                 if(prefs.getBoolean(Constants.PREFS_ENABLECRYPTO,
                         false) && Crypto.isAvailable(context)) {
-                    crypto = new Crypto(prefs);
-                    crypto.bind(context);
+                        final String userIds = prefs.getString(
+                            "cryptoUserIds", "");
+                        final String provider =  prefs.getString(
+                            "openpgpProviderList", "org.sufficientlysecure.keychain");
+                        crypto = new Crypto(userIds, provider);
+                        crypto.bind(context);
                 }
                 PowerManager.WakeLock wl = powerManager.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, TAG);
                 if(prefs.getBoolean("acquireWakelock", true))
