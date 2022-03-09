@@ -1,8 +1,10 @@
 package com.machiav3lli.backup.items
 
+import android.content.ContentResolver
 import android.content.Context
 import android.database.Cursor
 import android.net.Uri
+import android.os.Environment
 import android.provider.DocumentsContract
 import androidx.core.content.FileProvider
 import androidx.core.database.getIntOrNull
@@ -288,9 +290,9 @@ open class StorageFile {
                                 // NOTE: lockups occur in emulator (or A12?) for certain paths
                                 // e.g. /storage/emulated/$user
                                 val possiblePaths = listOf(
+                                    "/mnt/runtime/full/$storage/$subpath",
                                     "/mnt/media_rw/$storage/$subpath",
                                     "/mnt/pass_through/$user/$storage/$subpath",
-                                    "/mnt/runtime/full/$storage/$subpath",
                                     "/mnt/runtime/default/$storage/$subpath",
 
                                     // lockups! primary links to /storage/emulated/$user and all self etc.
@@ -536,6 +538,55 @@ open class StorageFile {
             } catch (e: Throwable) {
                 unhandledException(e, _uri)
             }
+        }
+        return null
+    }
+
+    fun getPath(context: Context?, uri: Uri): String? {
+        // DocumentProvider
+        if (ContentResolver.SCHEME_CONTENT == uri.scheme) {
+            // ExternalStorageProvider
+            if (uri.authority?.endsWith("com.android.externalstorage.documents") == true) {
+                val docId = DocumentsContract.getDocumentId(uri)
+                val split = docId.split(":").toTypedArray()
+                val type = split[0]
+                // This is for checking Main Memory
+                return if ("primary".equals(type, ignoreCase = true)) {
+                    if (uri.authority?.startsWith("0")!!) {
+                        if (split.size > 1) {
+                            "/storage/emulated/0" + File.separator + split[1]
+                        } else {
+                            "/storage/emulated/0"
+                        }
+                    } else {
+                        if (split.size > 1) {
+                            Environment.getExternalStorageDirectory().toString() + File.separator + split[1]
+                        } else {
+                            Environment.getExternalStorageDirectory().toString()
+                        }
+                    }
+                    // This is for checking SD Card
+                } else {
+                    "storage" + File.separator + docId.replace(":", File.separator)
+                }
+            } else if ("com.oasisfeng.island.files.shuttle" == uri.authority) {
+                val docId = DocumentsContract.getDocumentId(uri)
+                val split = docId.split(":").toTypedArray()
+                val type = split[0]
+                // This is for checking Main Memory
+                return if ("primary".equals(type, ignoreCase = true)) {
+                    if (split.size > 1) {
+                        "/storage/emulated/0" + File.separator + split[1]
+                    } else {
+                        "/storage/emulated/0"
+                    }
+                    // This is for checking SD Card
+                } else {
+                    "storage" + File.separator + docId.replace(":", File.separator)
+                }
+            }
+        } else if ("file" == uri.scheme) {
+            return uri.path
         }
         return null
     }

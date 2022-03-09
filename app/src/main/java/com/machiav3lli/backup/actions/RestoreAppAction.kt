@@ -538,7 +538,7 @@ open class RestoreAppAction(context: Context, work: AppActionWork?, shell: Shell
                 throw RestoreFailedException("Backup archive at $archive is missing")
             }
             try {
-                openArchiveFile(archive, isCompressed, isEncrypted, iv).use { archiveStream ->
+                //openArchiveFile(archive, isCompressed, isEncrypted, iv).use { archiveStream ->
 
                     targetDir.mkdirs()  // in case it doesn't exist
 
@@ -553,16 +553,22 @@ open class RestoreAppAction(context: Context, work: AppActionWork?, shell: Shell
                     val excludeCache = findAssetFile(ShellHandler.EXCLUDE_CACHE_FILE).toString()
 
                     var options = ""
+                    if (isCompressed) {
+                        options += " --compress"
+                    }
+                    val fullFilePath = archive.getPath(context, archive.uri!!)
+                    options += " --archive ${fullFilePath?.let { quote(it) }}"
                     options += " --exclude " + quote(exclude)
                     if (pref_excludeCache.value) {
                         options += " --exclude " + quote(excludeCache)
                     }
+                    val suOptions = if (ShellHandler.isMountMaster) "--mount-master" else ""
 
-                    val cmd = "sh $qTarScript extract $utilBoxQ $options ${quote(targetDir)}"
+                    val cmd = "su $suOptions -c sh $qTarScript extract $utilBoxQ $options ${quote(targetDir)}"
 
                     Timber.i("SHELL: $cmd")
 
-                    val (code, err) = runAsRootPipeInCollectErr(archiveStream, cmd)
+                    val out = ShellHandler.runAsUser(cmd); val code = out.code; val err = out.err
 
                     //---------- ignore error code, because sockets may trigger it
                     // if (err != "") {
@@ -574,7 +580,6 @@ open class RestoreAppAction(context: Context, work: AppActionWork?, shell: Shell
                     if (code != 0)
                         Timber.i("tar returns: code $code: " + err) // at least log the full error
                     val errLines = err
-                        .split("\n")
                         .filterNot { line ->
                             line.isBlank()
                                     || line.contains("tar: unknown file type") // e.g. socket 140000
@@ -586,7 +591,7 @@ open class RestoreAppAction(context: Context, work: AppActionWork?, shell: Shell
                         if (code != 0)
                             throw ScriptException(errFiltered)
                     }
-                }
+                //}
             } catch (e: FileNotFoundException) {
                 throw RestoreFailedException("Backup archive at $archive is missing", e)
             } catch (e: IOException) {
@@ -733,7 +738,7 @@ open class RestoreAppAction(context: Context, work: AppActionWork?, shell: Shell
             val command = listOf(
                 commandChown(uid, gid, target),
                 commandChownMultiRec(uid, gid, chownTargets),
-                commandChownMultiRec(uid, gidCache, cacheTargets),
+                //commandChownMultiRec(uid, gidCache, cacheTargets),
                 commandChcon(con, target),
             ).filterNotNull().joinToString(" ; ")
             runAsRoot(command)
