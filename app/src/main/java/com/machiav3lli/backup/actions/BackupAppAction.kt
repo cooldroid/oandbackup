@@ -32,7 +32,7 @@ import com.machiav3lli.backup.handler.LogsHandler
 import com.machiav3lli.backup.handler.ShellHandler
 import com.machiav3lli.backup.handler.ShellHandler.Companion.isFileNotFoundException
 import com.machiav3lli.backup.handler.ShellHandler.Companion.quote
-import com.machiav3lli.backup.handler.ShellHandler.Companion.runAsRootPipeOutCollectErr
+import com.machiav3lli.backup.handler.ShellHandler.Companion.runAsUser
 import com.machiav3lli.backup.handler.ShellHandler.Companion.utilBoxQ
 import com.machiav3lli.backup.handler.ShellHandler.ShellCommandFailedException
 import com.machiav3lli.backup.items.ActionResult
@@ -64,6 +64,7 @@ import org.apache.commons.compress.compressors.gzip.GzipCompressorOutputStream
 import org.apache.commons.compress.compressors.gzip.GzipParameters
 import org.apache.commons.compress.compressors.zstandard.ZstdCompressorOutputStream
 import timber.log.Timber
+import java.io.File
 import java.io.IOException
 import java.io.OutputStream
 
@@ -422,14 +423,26 @@ open class BackupAppAction(context: Context, work: AppActionWork?, shell: ShellH
             return false
 
         Timber.i("Creating $dataType backup via tar")
-
+        val backupFilename = getBackupArchiveFilename(
+            dataType,
+            shouldCompress,
+            getCompressionType(),
+            iv != null && isEncryptionEnabled()
+        )
+/*
         val outStream = createArchiveFile(dataType, backupInstanceDir, compress, iv)
-
+*/
         var result = false
         try {
             val tarScript = ShellHandler.findScript("tar.sh").toString()
 
             var options = ""
+            if (compress) {
+                options += " --compress"
+            }
+            val fullFilePath = backupInstanceDir.getPath(context, backupInstanceDir.uri!!)
+                .plus(File.separator).plus(backupFilename)
+            options += " --archive ${quote(fullFilePath)}"
             options += " --exclude ${quote(ShellHandler.BACKUP_EXCLUDE_FILE)}"
             if (pref_excludeCache.value) {
                 options += " --exclude ${quote(ShellHandler.EXCLUDE_CACHE_FILE)}"
@@ -439,7 +452,7 @@ open class BackupAppAction(context: Context, work: AppActionWork?, shell: ShellH
 
             Timber.i("SHELL: $cmd")
 
-            val (code, err) = runAsRootPipeOutCollectErr(outStream, cmd)
+            val out = runAsUser(cmd); val code = out.code; val err = out.err
 
             //---------- ignore error code, because sockets may trigger it
             // if (err != "") {
@@ -488,7 +501,7 @@ open class BackupAppAction(context: Context, work: AppActionWork?, shell: ShellH
             throw BackupFailedException(message, e)
         } finally {
             Timber.d("Done compressing. Closing archive stream.")
-            outStream.close()
+            //outStream.close()
         }
         return result
     }
