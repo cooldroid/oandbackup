@@ -5,11 +5,6 @@ import android.util.Log;
 
 import com.topjohnwu.superuser.Shell;
 
-import java.io.BufferedReader;
-import java.io.DataOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -30,13 +25,13 @@ public class CommandHandler {
         int code = 1;
         if (shell.equals("su")) {
             try {
-                code = Shell.su(commands.toArray(new String[0])).to(stdout, stderr).exec().getCode();
+                code = Shell.cmd(commands.toArray(new String[0])).to(stdout, stderr).exec().getCode();
             } catch (Exception e) {
                 exceptionListener.onUnexpectedException(e);
             }
         } else {
             try {
-                code = Shell.sh(commands.toArray(new String[0])).to(stdout, stderr).exec().getCode();
+                code = Shell.cmd(commands.toArray(new String[0])).to(stdout, stderr).exec().getCode();
             } catch (Exception e) {
                 exceptionListener.onUnexpectedException(e);
             }

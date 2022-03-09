@@ -6,7 +6,6 @@ import android.app.AlarmManager;
 import android.app.AlertDialog;
 import android.app.PendingIntent;
 import android.content.Context;
-import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.content.res.Configuration;
@@ -22,7 +21,6 @@ import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
-import android.widget.AdapterView;
 import android.widget.AdapterView.AdapterContextMenuInfo;
 import android.widget.ListView;
 import android.widget.SearchView;
@@ -84,12 +82,12 @@ implements SharedPreferences.OnSharedPreferenceChangeListener, ActionListener
     Sorter sorter;
 
     static {
-        /* Shell.Config methods shall be called before any shell is created
-         * This is the why in this example we call it in a static block
-         * The followings are some examples, check Javadoc for more details */
-        Shell.Config.setFlags(Shell.FLAG_REDIRECT_STDERR);
-        Shell.Config.verboseLogging(BuildConfig.DEBUG);
-        Shell.Config.setTimeout(10);
+        // Set settings before the main shell can be created
+        Shell.enableVerboseLogging = BuildConfig.DEBUG;
+        Shell.setDefaultBuilder(Shell.Builder.create()
+                .setFlags(Shell.FLAG_REDIRECT_STDERR)
+                .setTimeout(10)
+        );
     }
 
     @Override
@@ -178,7 +176,7 @@ implements SharedPreferences.OnSharedPreferenceChangeListener, ActionListener
     }
 
     private void restart() {
-        final PendingIntent pendingIntent = PendingIntent.getActivity(this,
+        @SuppressLint("UnspecifiedImmutableFlag") final PendingIntent pendingIntent = PendingIntent.getActivity(this,
             0, getIntent(), PendingIntent.FLAG_CANCEL_CURRENT);
         new AlertDialog.Builder(this)
             .setTitle(R.string.restart_dialog)
@@ -205,11 +203,6 @@ implements SharedPreferences.OnSharedPreferenceChangeListener, ActionListener
         // reload handlemessages in case its context has been garbage collected
         handleMessages = new HandleMessages(this);
         // work-around for changing language on older android versions since TaskStackBuilder doesn't seem to recreate the activities below the top in the stack properly
-        if(android.os.Build.VERSION.SDK_INT < android.os.Build.VERSION_CODES.HONEYCOMB && languageChanged)
-        {
-            Utils.reloadWithParentStack(OAndBackup.this);
-            languageChanged = false;
-        }
     }
 
     // The users parameter should ideally be List instead of ArrayList
@@ -220,7 +213,7 @@ implements SharedPreferences.OnSharedPreferenceChangeListener, ActionListener
         final Thread initThread = new Thread(new InitRunnable(checked,
             firstVisiblePosition, users));
         uiThread = Optional.of(initThread);
-        initThread.start();
+        Shell.getShell(shell -> initThread.start());
         return initThread.getId();
     }
 
@@ -373,46 +366,43 @@ implements SharedPreferences.OnSharedPreferenceChangeListener, ActionListener
         menu.clear();
         MenuInflater inflater = getMenuInflater();
         inflater.inflate(R.menu.mainmenu, menu);
-        if(android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.HONEYCOMB)
+        mSearchItem = menu.findItem(R.id.search);
+        SearchView search = (SearchView) mSearchItem.getActionView();
+        search.setIconifiedByDefault(true);
+        search.setQueryHint(getString(R.string.searchHint));
+        search.setOnQueryTextListener(new OnQueryTextListener()
         {
-            mSearchItem = menu.findItem(R.id.search);
-            SearchView search = (SearchView) mSearchItem.getActionView();
-            search.setIconifiedByDefault(true);
-            search.setQueryHint(getString(R.string.searchHint));
-            search.setOnQueryTextListener(new OnQueryTextListener()
+            @Override
+            public boolean onQueryTextChange(String newText)
             {
-                @Override
-                public boolean onQueryTextChange(String newText)
-                {
-                    if(OAndBackup.this.adapter != null)
-                        OAndBackup.this.adapter.getFilter().filter(newText);
-                    return true;
-                }
-                @Override
-                public boolean onQueryTextSubmit(String query)
-                {
-                    if(OAndBackup.this.adapter != null)
-                        OAndBackup.this.adapter.getFilter().filter(query);
-                    return true;
-                }
-            });
-            // man kan ikke bruge onCloseListener efter 3.2: http://code.google.com/p/android/issues/detail?id=25758
-            mSearchItem.setOnActionExpandListener(new MenuItem.OnActionExpandListener()
+                if(OAndBackup.this.adapter != null)
+                    OAndBackup.this.adapter.getFilter().filter(newText);
+                return true;
+            }
+            @Override
+            public boolean onQueryTextSubmit(String query)
             {
-                @Override
-                public boolean onMenuItemActionExpand(MenuItem item)
-                {
-                    return true;
-                }
-                @Override
-                public boolean onMenuItemActionCollapse(MenuItem item)
-                {
-                    adapter.getFilter().filter("");
-                    sorter.filterShowAll();
-                    return true;
-                }
-            });
-        }
+                if(OAndBackup.this.adapter != null)
+                    OAndBackup.this.adapter.getFilter().filter(query);
+                return true;
+            }
+        });
+        // man kan ikke bruge onCloseListener efter 3.2: http://code.google.com/p/android/issues/detail?id=25758
+        mSearchItem.setOnActionExpandListener(new MenuItem.OnActionExpandListener()
+        {
+            @Override
+            public boolean onMenuItemActionExpand(MenuItem item)
+            {
+                return true;
+            }
+            @Override
+            public boolean onMenuItemActionCollapse(MenuItem item)
+            {
+                adapter.getFilter().filter("");
+                sorter.filterShowAll();
+                return true;
+            }
+        });
         return true;
     }
     @Override
@@ -433,7 +423,7 @@ implements SharedPreferences.OnSharedPreferenceChangeListener, ActionListener
         }
         return true;
     }
-    public Intent batchIntent(Class batchClass, int operation)
+    public Intent batchIntent(Class<?> batchClass, int operation)
     {
         Intent batchIntent = new Intent(this, batchClass);
         batchIntent.putExtra("dk.jens.backup.operation", operation);
@@ -442,6 +432,8 @@ implements SharedPreferences.OnSharedPreferenceChangeListener, ActionListener
         batchIntent.putExtra("dk.jens.backup.sortingMethodId", sorter.getSortingMethod().getId());
         return batchIntent;
     }
+
+    @SuppressLint("NonConstantResourceId")
     @Override
     public boolean onOptionsItemSelected(MenuItem item)
     {
@@ -494,6 +486,8 @@ implements SharedPreferences.OnSharedPreferenceChangeListener, ActionListener
         }
         menu.setHeaderTitle(appInfo.getLabel());
     }
+
+    @SuppressLint("NonConstantResourceId")
     @Override
     public boolean onContextItemSelected(MenuItem item)
     {
@@ -538,7 +532,7 @@ implements SharedPreferences.OnSharedPreferenceChangeListener, ActionListener
                         if(backupDir != null)
                         {
                             File backupSubDir = new File(backupDir, adapter.getItem(info.position).getPackageName());
-                            shellCommands.deleteBackup(backupSubDir);
+                            ShellCommands.deleteBackup(backupSubDir);
                             refresh(); // behøver ikke refresh af alle pakkerne, men refresh(packageName) kalder readLogFile(), som ikke kan håndtere, hvis logfilen ikke findes
                         }
                         handleMessages.endMessage();
@@ -624,15 +618,13 @@ implements SharedPreferences.OnSharedPreferenceChangeListener, ActionListener
         String title = enable ? getString(R.string.enablePackageTitle) : getString(R.string.disablePackageTitle);
         final ArrayList<String> selectedUsers = new ArrayList<String>();
         final ArrayList<String> userList = shellCommands.getUsers();
-        CharSequence[] users = userList.toArray(new CharSequence[userList.size()]);
+        CharSequence[] users = userList.toArray(new CharSequence[0]);
         new AlertDialog.Builder(this)
             .setTitle(title)
             .setMultiChoiceItems(users, null, (dialog, chosen, checked) -> {
                 if(checked) {
                     selectedUsers.add(userList.get(chosen));
-                } else if(selectedUsers.contains(userList.get(chosen))) {
-                    selectedUsers.remove(userList.get(chosen));
-                }
+                } else selectedUsers.remove(userList.get(chosen));
             })
             .setPositiveButton(R.string.dialogOK, (dialog, which) ->
                 shellCommands.enableDisablePackage(packageName,
@@ -744,7 +736,7 @@ implements SharedPreferences.OnSharedPreferenceChangeListener, ActionListener
             if(throwable != null) {
                 Log.e(TAG, String.format(
                     "error during AssetHandlerTask.onPostExecute: %s",
-                    throwable.toString()));
+                        throwable));
                 Toast.makeText(context, throwable.toString(),
                     Toast.LENGTH_LONG).show();
             }
