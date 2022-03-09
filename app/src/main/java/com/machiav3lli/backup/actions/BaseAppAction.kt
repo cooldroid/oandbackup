@@ -147,6 +147,7 @@ abstract class BaseAppAction protected constructor(
         )
         val DATA_BACKUP_EXCLUDED_BASENAMES = listOfNotNull(
             "lib",      //TODO hg42 what about architecture dependent names? or may be application specific? lib* ???
+            "app_webview*", "app_textures", "app_sslcache", "app_google_tagmanager", "code_cache", "files/.Fabric", "files/socket_pipe", "oat", "lib-*",
             if (!pref_backupNoBackupData.value) "no_backup" else null //TODO hg42 use Context.getNoBackupFilesDir() ??? tricky, because it's an absolute path (remove common part...)
         )
         val DATA_RESTORE_EXCLUDED_BASENAMES = listOfNotNull(
