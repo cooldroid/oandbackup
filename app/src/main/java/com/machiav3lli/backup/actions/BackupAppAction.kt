@@ -37,6 +37,7 @@ import com.machiav3lli.backup.handler.LogsHandler
 import com.machiav3lli.backup.handler.ShellHandler
 import com.machiav3lli.backup.handler.ShellHandler.Companion.isFileNotFoundException
 import com.machiav3lli.backup.handler.ShellHandler.Companion.quote
+import com.machiav3lli.backup.handler.ShellHandler.Companion.runAsRoot
 import com.machiav3lli.backup.handler.ShellHandler.Companion.utilBoxQ
 import com.machiav3lli.backup.handler.ShellHandler.ShellCommandFailedException
 import com.machiav3lli.backup.items.ActionResult
@@ -443,6 +444,7 @@ open class BackupAppAction(context: Context, work: AppActionWork?, shell: ShellH
             shouldCompress,
             iv != null && context.isEncryptionEnabled()
         )
+/*
         val backupFile = backupInstanceDir.createFile("application/octet-stream", backupFilename)
 
         var outStream: OutputStream = backupFile.outputStream()!!
@@ -461,7 +463,7 @@ open class BackupAppAction(context: Context, work: AppActionWork?, shell: ShellH
                 gzipParams
             )
         }
-
+*/
         var result = false
         try {
             val tarScript = ShellHandler.findAssetFile("tar.sh").toString()
@@ -470,10 +472,30 @@ open class BackupAppAction(context: Context, work: AppActionWork?, shell: ShellH
                 ShellHandler.findAssetFile(ShellHandler.EXCLUDE_CACHE_FILE).toString()
 
             var options = ""
+            if (compress) {
+                options += " --compress"
+            }
+            val fullFilePath =
+                backupInstanceDir.getPath(context, backupInstanceDir.uri!!).plus("/")
+                    .plus(backupFilename)
+            options += " --archive ${quote(fullFilePath)}"
             options += " --exclude ${quote(exclude)}"
             if (context.getDefaultSharedPreferences().getBoolean(PREFS_EXCLUDECACHE, true)) {
                 options += " --exclude ${quote(excludeCache)}"
             }
+            val shCmd = "sh ${quote(tarScript)} create $utilBoxQ $options ${quote(sourcePath)}"
+            val shellResult = runAsRoot(shCmd)
+            val errLines = shellResult.err.filterNot { line ->
+                line.isBlank()
+                        || line.contains("tar: unknown file type") // e.g. socket 140000
+            }
+            if (errLines.isNotEmpty()) {
+                val errFiltered = errLines.joinToString("\n")
+                Timber.i(errFiltered)
+                throw ScriptException(errFiltered)
+            }
+            result = shellResult.isSuccess
+/*
             var suOptions = "--mount-master"
 
             val cmd = "su $suOptions -c sh ${quote(tarScript)} create $utilBoxQ $options ${
@@ -504,13 +526,14 @@ open class BackupAppAction(context: Context, work: AppActionWork?, shell: ShellH
                 throw ScriptException(errFiltered)
             }
             result = true
+*/
         } catch (e: Throwable) {
             val message = "${e.javaClass.canonicalName} occurred on $dataType backup: $e"
             LogsHandler.unhandledException(e, message)
             throw BackupFailedException(message, e)
         } finally {
             Timber.d("Done compressing. Closing $backupFilename")
-            outStream.close()
+            //outStream.close()
         }
         return result
     }

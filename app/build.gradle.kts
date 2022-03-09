@@ -111,7 +111,7 @@ android {
 }
 
 dependencies {
-    implementation("org.jetbrains.kotlin:kotlin-stdlib-jdk8:1.6.10")
+    implementation("org.jetbrains.kotlin:kotlin-stdlib-jdk8:1.6.20")
 
     // Libs
     implementation("androidx.room:room-runtime:2.5.0-alpha01")
@@ -125,7 +125,7 @@ dependencies {
     implementation("org.apache.commons:commons-compress:1.21")
     implementation("commons-io:commons-io:2.11.0")
     implementation("com.jakewharton.timber:timber:5.0.1")
-    val libsu = "3.2.1"
+    val libsu = "5.0.1"
     implementation("com.github.topjohnwu.libsu:core:$libsu")
     implementation("com.github.topjohnwu.libsu:io:$libsu")
     //implementation("com.github.topjohnwu.libsu:busybox:$libsu")

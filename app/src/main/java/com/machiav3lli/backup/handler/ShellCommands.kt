@@ -30,6 +30,7 @@ import timber.log.Timber
 import java.io.File
 
 class ShellCommands(private var users: List<String>?) {
+    /*
     var multiuserEnabled: Boolean
 
     init {
@@ -46,7 +47,7 @@ class ShellCommands(private var users: List<String>?) {
         }
         multiuserEnabled = !users.isNullOrEmpty() && users?.size ?: 1 > 1
     }
-
+    */
     @Throws(ShellActionFailedException::class)
     fun uninstall(packageName: String?, sourceDir: String?, dataDir: String?, isSystem: Boolean) {
         var command: String
