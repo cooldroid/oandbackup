@@ -49,6 +49,7 @@ import com.machiav3lli.backup.utils.CIPHER_ALGORITHM
 import com.machiav3lli.backup.utils.CryptoSetupException
 import com.machiav3lli.backup.utils.FileUtils.BackupLocationInAccessibleException
 import com.machiav3lli.backup.utils.StorageLocationNotConfiguredException
+import com.machiav3lli.backup.utils.binaryMimeType
 import com.machiav3lli.backup.utils.encryptStream
 import com.machiav3lli.backup.utils.getCompressionLevel
 import com.machiav3lli.backup.utils.getCryptoSalt
@@ -68,6 +69,11 @@ import timber.log.Timber
 import java.io.IOException
 import java.io.OutputStream
 import java.nio.charset.StandardCharsets
+import java.io.File
+import java.io.FileInputStream
+import java.util.zip.CRC32
+import java.util.zip.ZipEntry
+import java.util.zip.ZipOutputStream
 
 val COMPRESSION_ALGORITHM = "gz"
 
@@ -307,6 +313,7 @@ open class BackupAppAction(context: Context, work: AppActionWork?, shell: ShellH
             apksToBackup.size,
             apksToBackup.joinToString(" ") { s: String -> RootFile(s).name }
         )
+/*
         for (apk in apksToBackup) {
             try {
                 Timber.i("${app.packageName}: $apk")
@@ -318,6 +325,68 @@ open class BackupAppAction(context: Context, work: AppActionWork?, shell: ShellH
                 LogsHandler.unhandledException(e, app)
                 throw BackupFailedException("Could not backup apk $apk", e)
             }
+        }
+*/
+        try {
+            if (app.apkSplits.isEmpty()) {
+                suCopyFileToDocument(apksToBackup[0], backupInstanceDir)
+            } else {
+                createSplitApk(context, app, backupInstanceDir)
+            }
+        } catch (e: IOException) {
+            Timber.e("$app: Could not backup apk ${app.packageName}: $e")
+            throw BackupFailedException("Could not backup apk ${app.packageName}", e)
+        } catch (e: Throwable) {
+            LogsHandler.unhandledException(e, app)
+            throw BackupFailedException("Could not backup apk ${app.packageName}", e)
+        }
+    }
+
+    open fun createSplitApk(
+        context: Context,
+        appPackage: Package,
+        targetDir: StorageFile
+    ) {
+        try {
+            val apk = appPackage.packageInfo.sourceDir.toString()
+            ZipOutputStream(
+                targetDir.createFile(binaryMimeType, RootFile(apk).name.plus("s"))
+                    .outputStream()
+            ).use { zipOutputStream ->
+                val apkFiles: MutableList<File> = ArrayList()
+                apkFiles.add(File(apk))
+                for (splitPath in appPackage.packageInfo.splitSourceDirs) apkFiles.add(
+                    File(splitPath)
+                )
+                //APKs
+                for (apkFile in apkFiles) {
+                    Timber.i("${app.packageName}: $apkFile")
+                    zipOutputStream.setMethod(ZipOutputStream.STORED)
+                    val zipEntry = ZipEntry(apkFile.name)
+                    zipEntry.method = ZipEntry.STORED
+                    zipEntry.compressedSize = apkFile.length()
+                    zipEntry.size = apkFile.length()
+                    zipEntry.crc = calculateFileCrc32(apkFile)
+                    zipOutputStream.putNextEntry(zipEntry)
+                    FileInputStream(apkFile).use { apkInputStream ->
+                        apkInputStream.copyTo(zipOutputStream, 1024 * 512)
+                    }
+                    zipOutputStream.closeEntry()
+                }
+            }
+        } catch (e: IOException) {
+            Timber.e(appPackage.packageInfo.packageLabel, e.toString())
+        }
+    }
+
+    @Throws(IOException::class)
+    open fun calculateFileCrc32(file: File?): Long {
+        FileInputStream(file).use { inStream ->
+            val crc32 = CRC32()
+            val buffer = ByteArray(1024 * 1024)
+            var read: Int
+            while (inStream.read(buffer).also { read = it } > 0) crc32.update(buffer, 0, read)
+            return crc32.value
         }
     }
 
