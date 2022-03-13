@@ -18,6 +18,7 @@
 package com.machiav3lli.backup.actions
 
 import android.content.Context
+import android.os.Build
 import com.machiav3lli.backup.MODE_APK
 import com.machiav3lli.backup.MODE_DATA
 import com.machiav3lli.backup.MODE_DATA_DE
@@ -63,6 +64,7 @@ import com.machiav3lli.backup.utils.isRestoreAllPermissions
 import com.machiav3lli.backup.utils.suCopyFileFromDocument
 import com.machiav3lli.backup.utils.suRecursiveCopyFileFromDocument
 import com.machiav3lli.backup.utils.suUnpackTo
+import com.topjohnwu.superuser.Shell
 import org.apache.commons.compress.archivers.tar.TarArchiveInputStream
 import org.apache.commons.compress.compressors.gzip.GzipCompressorInputStream
 import timber.log.Timber
@@ -72,7 +74,9 @@ import java.io.FileNotFoundException
 import java.io.IOException
 import java.io.InputStream
 import java.nio.file.Files
+import java.util.*
 import java.util.regex.Pattern
+import org.apache.commons.compress.archivers.zip.ZipFile
 
 open class RestoreAppAction(context: Context, work: AppActionWork?, shell: ShellHandler) :
     BaseAppAction(context, work, shell) {
@@ -94,7 +98,8 @@ open class RestoreAppAction(context: Context, work: AppActionWork?, shell: Shell
                 if (backupDir != null) {
                     if (backupMode and MODE_APK == MODE_APK) {
                         work?.setOperation("apk")
-                        restorePackage(backupDir, backup)
+                        //restorePackage(backupDir, backup)
+                        restorePackageAPK(backupDir, backup)
                         refreshAppInfo(context, app)    // also waits for valid paths
                     }
                     if (backupMode != MODE_APK) {
@@ -207,6 +212,186 @@ open class RestoreAppAction(context: Context, work: AppActionWork?, shell: Shell
             Timber.d("Removing existing files in $targetPath")
             val command = "$utilBoxQ rm -rf ${quoteMultiple(removeTargets)}"
             runAsRoot(command)
+        }
+    }
+
+    @Throws(RestoreFailedException::class)
+    open fun restorePackageAPK(backupDir: StorageFile, backup: Backup) {
+        val packageName = backup.packageName
+        Timber.i("[$packageName] Restoring from $backupDir")
+        val splitApksInBackup = backup.splitSourceDirs
+        val baseApkFile: StorageFile = if (splitApksInBackup.isEmpty()) {
+            backupDir.findFile(BASE_APK_FILENAME)
+                ?: throw RestoreFailedException("$BASE_APK_FILENAME is missing in backup", null)
+        } else {
+            backupDir.findFile(BASE_APKS_FILENAME)
+                ?: throw RestoreFailedException("$BASE_APKS_FILENAME is missing in backup", null)
+        }
+
+        // Copy all apk paths into a single array
+        val apksToRestore = arrayOf(baseApkFile)
+        val stagingApkPath: RootFile?
+        if (PACKAGE_STAGING_DIRECTORY.exists()) {
+            // It's expected, that all SDK 24+ version of Android go this way.
+            stagingApkPath = PACKAGE_STAGING_DIRECTORY
+        } else {
+            stagingApkPath = RootFile(context.getExternalFilesDir(null), "apkTmp")
+            Timber.w("Weird configuration. Expecting that the system does not allow installing from OABX's own data directory. Copying the apk to $stagingApkPath")
+        }
+        var success = false
+        try {
+            // Try it with a staging path. This is usually the way to go.
+            // copy apks to staging dir
+            apksToRestore.forEach { apkFile ->
+                // The file must be touched before it can be written for some reason...
+                Timber.d("[$packageName] Copying ${apkFile.name} to staging dir")
+                runAsRoot(
+                    "touch ${
+                        quote(
+                            RootFile(
+                                stagingApkPath,
+                                "$packageName.${apkFile.name}"
+                            )
+                        )
+                    }"
+                )
+                suCopyFileFromDocument(
+                    apkFile,
+                    RootFile(stagingApkPath, "$packageName.${apkFile.name}").absolutePath
+                )
+            }
+            val disableVerification = context.isDisableVerification
+            val stagingFile = RootFile(stagingApkPath, "$packageName.${baseApkFile.name}")
+            if (splitApksInBackup.isEmpty()) {
+                val sb = StringBuilder()
+                // disable verify apps over usb
+                if (disableVerification) sb.append("settings put global verifier_verify_adb_installs 0 ; ")
+                // Install main package
+                sb.append(
+                    getPackageInstallCommand(
+                        stagingFile,
+                        backup.profileId
+                    )
+                )
+                val commandWithoutPermissions = sb.toString()
+                if (!context.isRestoreAllPermissions && OABX.prefFlag(
+                        PREFS_RESTOREPERMISSIONS,
+                        true
+                    )
+                )
+                    backup.permissions
+                        .filterNot { it.isEmpty() }
+                        .forEach { p ->
+                            sb.append(" ; pm grant ${backup.packageName} $p")
+                        }
+                // re-enable verify apps over usb
+                if (disableVerification) sb.append(" ; settings put global verifier_verify_adb_installs 1")
+                val command = sb.toString()
+                try {
+                    runAsRoot(command)
+                } catch (e: ShellCommandFailedException) {
+                    val error = extractErrorMessage(e.shellResult)
+                    Timber.e("Restore APKs with permissions failed: $error")
+                    if (command != commandWithoutPermissions) runAsRoot(commandWithoutPermissions)
+                    else throw e
+                }
+            } else {
+                //restoreUserSplitApk(disableVerification, stagingFile)
+                val packageFiles = listOf(baseApkFile).map {
+                    RootFile(stagingApkPath, "$packageName.${it.name}")
+                }
+                // create session
+                runAsRoot(getSessionCreateCommand(backup.profileId, -1)).let {
+                    val sessionIdPattern = Pattern.compile("(\\d+)")
+                    val sessionIdMatcher = sessionIdPattern.matcher(it.out[0])
+                    val found = sessionIdMatcher.find()
+                    val sessionId = sessionIdMatcher.group(1)?.toInt()
+                    val pmPrefix = if (Build.VERSION.SDK_INT >= 28) "cmd package " else "pm "
+
+                    if (found && sessionId != null) {
+                        // write each of the bundle files
+                        try {
+                            ZipFile(stagingFile).use { zipFile ->
+                                var currentApkFile = 0
+                                zipFile.entries.asSequence().forEach { entry ->
+                                    zipFile.getInputStream(entry).use { input ->
+                                        val shellResult = Shell.cmd(
+                                            pmPrefix + "install-write -S " + entry.size + " "
+                                                    + sessionId + " " + java.lang.String.format(
+                                                Locale.getDefault(), "%d.apk", currentApkFile++
+                                            ) + " - "
+                                        )
+                                            .add(input).exec()
+                                        shellResult.err.forEach {
+                                            Timber.e("restoreUserSplitApk: ", it)
+                                        }
+                                    }
+                                }
+                            }
+                        } catch (e: IOException) {
+                            Timber.e(stagingFile.name, e.message)
+                            throw RestoreFailedException("Restore Failed: ", e)
+                        }
+                        val sb = StringBuilder()
+                        // disable verify apps over usb
+                        if (disableVerification) sb.append("settings put global verifier_verify_adb_installs 0 ; ")
+                        // commit session
+                        sb.append(getSessionCommitCommand(sessionId))
+
+                        val commandWithoutPermissions = sb.toString()
+                        if (!context.isRestoreAllPermissions && OABX.prefFlag(
+                                PREFS_RESTOREPERMISSIONS,
+                                true
+                            )
+                        )
+                            backup.permissions
+                                .filterNot { it.isEmpty() }
+                                .forEach { p ->
+                                    sb.append(" ; pm grant ${backup.packageName} $p")
+                                }
+                        // re-enable verify apps over usb
+                        if (disableVerification) sb.append(" ; settings put global verifier_verify_adb_installs 1")
+                        val command = sb.toString()
+                        try {
+                            runAsRoot(command)
+                        } catch (e: ShellCommandFailedException) {
+                            val error = extractErrorMessage(e.shellResult)
+                            Timber.e("Restore APKs with permissions failed: $error")
+                            if (command != commandWithoutPermissions) runAsRoot(commandWithoutPermissions)
+                            else throw e
+                        }
+                    }
+                }
+            }
+            success = true
+            // Todo: Reload package meta data; Package Manager knows everything now; Function missing
+        } catch (e: ShellCommandFailedException) {
+            val error = extractErrorMessage(e.shellResult)
+            Timber.e("Restore APKs failed: $error")
+            throw RestoreFailedException(error, e)
+        } catch (e: IOException) {
+            throw RestoreFailedException("Could not copy apk to staging directory", e)
+        } finally {
+            // Cleanup only in case of failure, otherwise it's already included
+            if (!success)
+                Timber.i("[$packageName] Restore unsuccessful")
+            val command =
+                "$utilBoxQ rm ${
+                    quoteMultiple(
+                        apksToRestore.map {
+                            RootFile(stagingApkPath, "$packageName.${it.name}").absolutePath
+                        }
+                    )
+                }"
+            try {
+                runAsRoot(command)
+            } catch (e: ShellCommandFailedException) {
+                Timber.w(
+                    "[$packageName] Cleanup after failure failed: ${
+                        e.shellResult.err.joinToString("; ")
+                    }"
+                )
+            }
         }
     }
 
@@ -985,7 +1170,7 @@ open class RestoreAppAction(context: Context, work: AppActionWork?, shell: Shell
             "-t",
             if (context.isRestoreAllPermissions) "-g" else null,
             if (context.isAllowDowngrade) "-d" else null,
-            "-S", sumSize
+            if (sumSize >= 0) "-S $sumSize" else null,
         ).joinToString(" ")
 
     private fun getSessionWriteCommand(
@@ -1061,6 +1246,7 @@ open class RestoreAppAction(context: Context, work: AppActionWork?, shell: Shell
     companion object {
         protected val PACKAGE_STAGING_DIRECTORY = RootFile("/data/local/tmp")
         const val BASE_APK_FILENAME = "base.apk"
+        const val BASE_APKS_FILENAME = "base.apks"
         const val LOG_DIR_IS_MISSING_CANNOT_RESTORE =
             "Backup directory %s is missing. Cannot restore"
         const val LOG_EXTRACTING_S = "[%s] Extracting %s"
