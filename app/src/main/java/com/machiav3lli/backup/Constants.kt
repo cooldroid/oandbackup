@@ -147,6 +147,7 @@ const val MAIN_SORT_DATASIZE = 3
 const val MAIN_SORT_APPDATASIZE = 4
 const val MAIN_SORT_BACKUPSIZE = 5
 const val MAIN_SORT_BACKUPDATE = 6
+const val MAIN_SORT_LASTUPDATED = 7
 
 val sortChipItems = listOf(
     ChipItem.Label,
@@ -155,7 +156,8 @@ val sortChipItems = listOf(
     ChipItem.DataSize,
     ChipItem.AppDataSize,
     ChipItem.BackupSize,
-    ChipItem.BackupDate
+    ChipItem.BackupDate,
+    ChipItem.LastUpdated
 )
 
 const val MAIN_FILTER_DEFAULT = 0b111

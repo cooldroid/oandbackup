@@ -27,6 +27,7 @@ import com.machiav3lli.backup.MAIN_SORT_APPSIZE
 import com.machiav3lli.backup.MAIN_SORT_BACKUPDATE
 import com.machiav3lli.backup.MAIN_SORT_BACKUPSIZE
 import com.machiav3lli.backup.MAIN_SORT_DATASIZE
+import com.machiav3lli.backup.MAIN_SORT_LASTUPDATED
 import com.machiav3lli.backup.MAIN_SORT_PACKAGENAME
 import com.machiav3lli.backup.MODE_APK
 import com.machiav3lli.backup.MODE_DATA
@@ -124,6 +125,7 @@ private fun List<Package>.applySort(sort: Int, sortAsc: Boolean): List<Package> 
             MAIN_SORT_APPDATASIZE -> sortedByDescending { it.appBytes + it.dataBytes }
             MAIN_SORT_BACKUPSIZE -> sortedByDescending { it.backupBytes }
             MAIN_SORT_BACKUPDATE -> sortedWith(compareBy<Package> { it.latestBackup?.backupDate }.thenBy { it.packageLabel })
+            MAIN_SORT_LASTUPDATED -> sortedByDescending { it.lastUpdateTime }
             else -> sortedByDescending { it.packageLabel.lowercase() }
         }
     } else {
@@ -134,6 +136,7 @@ private fun List<Package>.applySort(sort: Int, sortAsc: Boolean): List<Package> 
             MAIN_SORT_APPDATASIZE -> sortedBy { it.appBytes + it.dataBytes }
             MAIN_SORT_BACKUPSIZE -> sortedBy { it.backupBytes }
             MAIN_SORT_BACKUPDATE -> sortedWith(compareByDescending<Package> { it.latestBackup?.backupDate }.thenBy { it.packageLabel })
+            MAIN_SORT_LASTUPDATED -> sortedBy { it.lastUpdateTime }
             else -> sortedBy { it.packageLabel.lowercase() }
         }
     }

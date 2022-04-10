@@ -40,6 +40,7 @@
     <string name="showOnlyDataBackedUp">Apps with only data backed up</string>
     <string name="sortByLabel">Sort by label</string>
     <string name="sortByPackageName">Sort by packagename</string>
+    <string name="sortByLastUpdated">Updated Date</string>
     <string name="sort">Sort and filter</string>
     <string name="uninstallDialogMessage">Uninstall this app?</string>
     <string name="deleteBackupDialogMessage">Delete backup files?</string>
