@@ -4,6 +4,7 @@ import androidx.compose.ui.graphics.Color
 
 val System = Color(0xFF4590FE)
 val User = Color(0xFFFE9045)
+val Installed = Color(0xFFC0C9C0)
 val Special = Color(0xFF9045FE)
 val APK = Color(0xFF3AEA85)
 val Data = Color(0xFFF445B0)
