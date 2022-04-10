@@ -41,6 +41,8 @@ import java.io.FileNotFoundException
 import java.io.IOException
 import java.time.LocalDateTime
 
+private val jsonObj = Json { ignoreUnknownKeys = true }
+
 @Entity(primaryKeys = ["packageName", "backupDate"])
 @Serializable
 data class Backup constructor(
@@ -273,7 +275,7 @@ data class Backup constructor(
         return result
     }
 
-    fun toJSON() = Json.encodeToString(this)
+    fun toJSON() = jsonObj.encodeToString(this)
 
     class BrokenBackupException @JvmOverloads internal constructor(
         message: String?,
@@ -284,7 +286,7 @@ data class Backup constructor(
 
         fun fromJson(json: String): Backup {
             traceBackupProps { "backup json: $json" }
-            return Json.decodeFromString(json)
+            return jsonObj.decodeFromString(json)
         }
 
         fun createFrom(propertiesFile: StorageFile): Backup? {
