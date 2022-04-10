@@ -73,6 +73,7 @@ import com.machiav3lli.backup.ui.compose.theme.Data
 import com.machiav3lli.backup.ui.compose.theme.DeData
 import com.machiav3lli.backup.ui.compose.theme.Exodus
 import com.machiav3lli.backup.ui.compose.theme.ExtDATA
+import com.machiav3lli.backup.ui.compose.theme.Installed
 import com.machiav3lli.backup.ui.compose.theme.LocalShapes
 import com.machiav3lli.backup.ui.compose.theme.Media
 import com.machiav3lli.backup.ui.compose.theme.OBB
@@ -558,12 +559,14 @@ fun PackageLabels(
         when {
             item.isSpecial -> R.drawable.ic_special
             item.isSystem -> R.drawable.ic_system
+            !item.isInstalled -> R.drawable.ic_close
             else -> R.drawable.ic_user
         },
         R.string.app_s_type_title,
         tint = when {
             item.isSpecial -> Special
             item.isSystem -> System
+            !item.isInstalled -> Installed
             else -> User
         }
     )
