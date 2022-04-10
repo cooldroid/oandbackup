@@ -111,12 +111,14 @@ import com.machiav3lli.backup.ui.compose.icons.phosphor.ProhibitInset
 import com.machiav3lli.backup.ui.compose.icons.phosphor.ShieldCheckered
 import com.machiav3lli.backup.ui.compose.icons.phosphor.Spinner
 import com.machiav3lli.backup.ui.compose.icons.phosphor.User
+import com.machiav3lli.backup.ui.compose.icons.phosphor.XCircle
 import com.machiav3lli.backup.ui.compose.theme.ColorAPK
 import com.machiav3lli.backup.ui.compose.theme.ColorData
 import com.machiav3lli.backup.ui.compose.theme.ColorDeData
 import com.machiav3lli.backup.ui.compose.theme.ColorDisabled
 import com.machiav3lli.backup.ui.compose.theme.ColorExodus
 import com.machiav3lli.backup.ui.compose.theme.ColorExtDATA
+import com.machiav3lli.backup.ui.compose.theme.ColorInstalled
 import com.machiav3lli.backup.ui.compose.theme.ColorMedia
 import com.machiav3lli.backup.ui.compose.theme.ColorOBB
 import com.machiav3lli.backup.ui.compose.theme.ColorSpecial
@@ -747,6 +749,7 @@ fun PackageLabels(
         when {
             item.isSpecial -> Phosphor.AsteriskSimple
             item.isSystem -> Phosphor.Spinner
+            !item.isInstalled -> Phosphor.XCircle
             else -> Phosphor.User
         },
         R.string.app_s_type_title,
@@ -754,6 +757,7 @@ fun PackageLabels(
             item.isDisabled -> ColorDisabled
             item.isSpecial -> ColorSpecial
             item.isSystem -> ColorSystem
+            !item.isInstalled -> ColorInstalled
             else -> ColorUser
         }
     )

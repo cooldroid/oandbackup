@@ -11,6 +11,7 @@ import com.machiav3lli.backup.MAIN_SORT_BACKUPDATE
 import com.machiav3lli.backup.MAIN_SORT_BACKUPSIZE
 import com.machiav3lli.backup.MAIN_SORT_DATASIZE
 import com.machiav3lli.backup.MAIN_SORT_LABEL
+import com.machiav3lli.backup.MAIN_SORT_LASTUPDATED
 import com.machiav3lli.backup.MAIN_SORT_PACKAGENAME
 import com.machiav3lli.backup.MODE_APK
 import com.machiav3lli.backup.MODE_DATA
@@ -27,6 +28,7 @@ import com.machiav3lli.backup.SPECIAL_FILTER_NEW_UPDATED
 import com.machiav3lli.backup.SPECIAL_FILTER_NOT_INSTALLED
 import com.machiav3lli.backup.SPECIAL_FILTER_OLD
 import com.machiav3lli.backup.ui.compose.icons.Phosphor
+import com.machiav3lli.backup.ui.compose.icons.phosphor.ArchiveTray
 import com.machiav3lli.backup.ui.compose.icons.phosphor.ArrowSquareOut
 import com.machiav3lli.backup.ui.compose.icons.phosphor.AsteriskSimple
 import com.machiav3lli.backup.ui.compose.icons.phosphor.Checks
@@ -190,6 +192,12 @@ data class ChipItem(
             MAIN_SORT_BACKUPDATE,
             R.string.sortBackupDate,
             Phosphor.Clock,
+            R.color.ic_exodus
+        )
+        val LastUpdated = ChipItem(
+            MAIN_SORT_LASTUPDATED,
+            R.string.sortByLastUpdated,
+            Phosphor.ArchiveTray,
             R.color.ic_exodus
         )
     }

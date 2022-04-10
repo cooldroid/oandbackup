@@ -46,6 +46,7 @@ class Package {
     var packageInfo: com.machiav3lli.backup.dbs.entity.PackageInfo
     private var packageBackupDir: StorageFile? = null
     var storageStats: StorageStats? = null
+    var lastUpdateTime: Long = 0
 
     private var backupListDirty = true
     private var backupListState = mutableStateOf(listOf<Backup>())
@@ -139,6 +140,7 @@ class Package {
     fun refreshStorageStats(context: Context): Boolean {
         return try {
             storageStats = context.getPackageStorageStats(packageName)
+            if (lastUpdateTime == 0L) lastUpdateTime = context.packageManager.getPackageInfo(packageName,0).lastUpdateTime
             true
         } catch (e: PackageManager.NameNotFoundException) {
             LogsHandler.logException(e, "Could not refresh StorageStats. Package was not found")

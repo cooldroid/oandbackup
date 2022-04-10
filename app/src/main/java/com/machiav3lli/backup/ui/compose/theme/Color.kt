@@ -8,6 +8,7 @@ val ColorNotInstalled @Composable get() = MaterialTheme.colorScheme.onSurfaceVar
 val ColorDisabled = Color(0xFF888888)
 val ColorSystem = Color(0xFF4590FE)
 val ColorUser = Color(0xFFFE9045)
+val ColorInstalled = Color(0xFFC0C9C0)
 val ColorSpecial = Color(0xFF9045FE)
 val ColorAPK = Color(0xFF3AEA85)
 val ColorData = Color(0xFFF445B0)
