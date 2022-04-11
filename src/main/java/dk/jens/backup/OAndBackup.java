@@ -724,8 +724,8 @@ implements SharedPreferences.OnSharedPreferenceChangeListener, ActionListener
         @Override
         public Context doInBackground(Context... contexts) {
             try {
-                AssetsHandler.copyOabutils(contexts[0]);
                 AssetsHandler.copyBusybox(contexts[0]);
+                AssetsHandler.copyOabutils(contexts[0]);
             } catch (AssetsHandler.AssetsHandlerException e) {
                 throwable = e;
             }

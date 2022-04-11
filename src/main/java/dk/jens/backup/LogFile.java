@@ -74,7 +74,7 @@ public class LogFile implements Parcelable
     public String getApk()
     {
         if(sourceDir != null && sourceDir.length() > 0)
-            return getPackageName() + ".apk.gz";
+            return "base.apk";
         return null;
     }
     public String getDataDir()

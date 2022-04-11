@@ -43,7 +43,7 @@ public class ShellCommands implements CommandHandler.UnexpectedExceptionListener
 {
     final static String TAG = OAndBackup.TAG;
     final static String EXTERNAL_FILES = "external_files";
-    final static String EXPANSION_FILES = "expansion_files";
+    final static String EXPANSION_FILES = "obb_files";
     public static boolean IS_SUPER_USER = false;
 	
     CommandHandler commandHandler = new CommandHandler();
@@ -52,7 +52,7 @@ public class ShellCommands implements CommandHandler.UnexpectedExceptionListener
     private String busybox;
     private boolean legacyMode;
 
-    private final String[] excludeFolders = new String[] {"lib", "cache", "app_webview", "app_textures", "app_optimized", "app_google_tagmanager",
+    private final String[] excludeFolders = new String[] {"lib", "cache", "app_*",
             "no_backup", "code_cache", "files/.Fabric"};
     private final String[] externalExcludeFolders = new String[] {"cache", "files/.vungle"};
 
@@ -138,24 +138,25 @@ public class ShellCommands implements CommandHandler.UnexpectedExceptionListener
 
         String backupAPKCommand = null;
         if (!hasSplits) {
-            File apkFile = new File(packageApk);
+            //File apkFile = new File(packageApk);
             //String backupAPKCommand = packageApk.isEmpty() ? "" : "cp " + packageApk + " " + backupSubDirPath;
             backupAPKCommand = packageApk.isEmpty() ? "" :
                     //busybox + " tar -czf " + backupSubDirPath + "/" + folder + ".apk.gz " + "-C " + apkFile.getParent() + " " + apkFile.getName();
-                    busybox + " gzip -1 -ck " + apkFile.getAbsolutePath() + " > " + backupSubDirPath + "/" + folder + ".apk.gz ";
+                    //busybox + " gzip -1 -ck " + apkFile.getAbsolutePath() + " > " + backupSubDirPath + "/" + folder + ".apk.gz ";
+                    "cp " + packageApk + " " + backupSubDirPath + "/";
         }
         StringBuilder excludes = new StringBuilder();
         for (String exclFolder: excludeFolders) {
-            excludes.append(" --exclude='").append(folder).append("/").append(exclFolder).append("'");
+            excludes.append(" --exclude='").append(exclFolder).append("'");
         }
         String backupDataCommand = busybox + " tar -cz" + followSymlinks + "f " +
-                backupSubDirPath + "/" + folder + ".tar.gz " +
-                "-C " + folderPath + excludes + " " + folder;
+                backupSubDirPath + "/" + "data.tar.gz " +
+                "-C " + folderPath + "/" + folder + excludes + " .";
         switch(backupMode)
         {
             case AppInfo.MODE_APK:
                 if (hasSplits) {
-                    executeWithPacking(context, applicationInfo, backupSubDirPath + "/" + folder + ".apks");
+                    executeWithPacking(context, applicationInfo, backupSubDirPath + "/" + "base.apks");
                 } else {
                     commands.add(backupAPKCommand);
                 }
@@ -180,35 +181,25 @@ public class ShellCommands implements CommandHandler.UnexpectedExceptionListener
                 for (String exclFolder: externalExcludeFolders) {
                     externalExcludes.append(" --exclude='").append(folder).append("/").append(exclFolder).append("'");
                 }
-                File backupSubDirExternalFiles = new File(backupSubDir, EXTERNAL_FILES);
-                if (backupSubDirExternalFiles.exists() || backupSubDirExternalFiles.mkdir()) {
-                    String externalFolderPath = swapBackupDirPath(Objects.requireNonNull(externalFilesDir.getParentFile()).getAbsolutePath());
-                    commands.add(busybox + " tar -cz" + followSymlinks + "f " +
-                            swapBackupDirPath(backupSubDir.getAbsolutePath() + "/" + EXTERNAL_FILES + "/" + folder + ".tar.gz") +
-                            " -C " + externalFolderPath + externalExcludes + " " + folder);
-                } else {
-                    Log.e(TAG, "couldn't create " + backupSubDirExternalFiles.getAbsolutePath());
-                }
+                String externalFolderPath = swapBackupDirPath(Objects.requireNonNull(externalFilesDir.getParentFile()).getAbsolutePath());
+                commands.add(busybox + " tar -cz" + followSymlinks + "f " +
+                        swapBackupDirPath(backupSubDir.getAbsolutePath() + "/" + EXTERNAL_FILES + ".tar.gz") +
+                        " -C " + externalFolderPath + externalExcludes + " " + folder);
             }
         } else if(!backupExternalFiles && backupMode != AppInfo.MODE_APK) {
-            deleteBackup(new File(backupSubDir, EXTERNAL_FILES));
+            deleteBackup(new File(backupSubDir, EXTERNAL_FILES + ".tar.gz"));
         }
 
         File expansionDir = getExpansionDirectoryPath(context, packageData);
-        File backupSubDirExpansionFiles;
         boolean backupExpansionFiles = prefs.getBoolean("backupExpansionFiles", false);
 
         if (backupExpansionFiles && backupMode != AppInfo.MODE_APK && expansionDir != null) {
-            backupSubDirExpansionFiles = new File(backupSubDir, EXPANSION_FILES);
-            if (backupSubDirExpansionFiles.exists() || backupSubDirExpansionFiles.mkdir()) {
-                commands.add(busybox + " cp -R " + swapBackupDirPath(expansionDir.getAbsolutePath()) +
-                        " " + swapBackupDirPath(backupSubDir.getAbsolutePath() + "/" + EXPANSION_FILES));
-            } else {
-                Log.e(TAG, "couldn't create " + backupSubDirExpansionFiles.getAbsolutePath());
-            }
+            //commands.add(busybox + " cp -R " + swapBackupDirPath(expansionDir.getAbsolutePath()) +
+            //        " " + swapBackupDirPath(backupSubDir.getAbsolutePath() + "/" + EXPANSION_FILES));
+            commands.add(busybox + " tar -czf " + backupSubDir.getAbsolutePath() + "/" +
+                EXPANSION_FILES + ".tar.gz" + " " + expansionDir.getAbsolutePath());
         } else if (!backupExpansionFiles && backupMode != AppInfo.MODE_APK) {
-            String data = packageData.substring(packageData.lastIndexOf("/"));
-            deleteBackup(new File(backupSubDir, EXPANSION_FILES));
+            deleteBackup(new File(backupSubDir, EXPANSION_FILES + ".tar.gz"));
         }
         List<String> errors = new ArrayList<>();
         int ret = commandHandler.runCmd("su", commands, line -> {},
@@ -340,35 +331,33 @@ public class ShellCommands implements CommandHandler.UnexpectedExceptionListener
         String dataDirName = fileDataDir.getName();
         Log.i(TAG, "restoring: " + label);
 
-        File zipFile = new File(backupSubDir, dataDirName + ".tar.gz");
+        File zipFile = new File(backupSubDir, "data.tar.gz");
         if (zipFile.exists()) {
             List<String> commands = new ArrayList<>();
 
             killPackage(context, packageName);
             if(prefs.getBoolean("backupExternalFiles", false))
             {
-                File externalFiles = new File(new File(backupSubDir, EXTERNAL_FILES), dataDirName + ".tar.gz");
+                File externalFiles = new File(backupSubDir, EXTERNAL_FILES + ".tar.gz");
                 if (externalFiles.exists()) {
                     //String externalFilesPath = context.getExternalFilesDir(null).getParentFile().getParentFile().getAbsolutePath();
-                    commands.add(busybox + " tar -C " + extAndroidData + " -xzf " + externalFiles.getAbsolutePath());
+                    commands.add(busybox + " tar -C " + extAndroidData + "/" + dataDirName + " -xzf " + externalFiles.getAbsolutePath());
                 }
             }
 
             if(prefs.getBoolean("backupExpansionFiles", false))
             {
-                File expansionFiles = new File(backupSubDir, EXPANSION_FILES);
-                if(expansionFiles.exists())
+                File expansionFiles = new File(backupSubDir, EXPANSION_FILES + ".tar.gz");
+                File expansionFilesPath = new File(context.getObbDir().getParentFile(), packageName);
+                if (expansionFilesPath.exists() ||  expansionFilesPath.mkdir())
                 {
-                    File expansionFilesPath = new File(context.getObbDir().getParentFile(), packageName);
-                    if (expansionFilesPath.exists() ||  expansionFilesPath.mkdir())
-                    {
-                        commands.add(busybox + " cp -R " + expansionFiles + "/* " + expansionFilesPath);
-                    }
+                    //commands.add(busybox + " cp -R " + expansionFiles + "/* " + expansionFilesPath);
+                    commands.add(busybox + " tar -xzf " + expansionFiles + " " + expansionFilesPath);
                 }
             }
 
-            String restoreCommand = busybox + " tar -C " + fileDataDir.getParent() + " -xzf " +
-                    zipFile.getAbsolutePath() + " --exclude='" + dataDirName +"/'";
+            String restoreCommand = busybox + " tar -C " + fileDataDir.getAbsolutePath() + " -xzf " +
+                    zipFile.getAbsolutePath();
             if (!(fileDataDir.exists()))
 			{
                 commands.add("mkdir " + dataDir);
@@ -622,7 +611,8 @@ public class ShellCommands implements CommandHandler.UnexpectedExceptionListener
             commands.add(busybox + " rm -r " + swapBackupDirPath(tempPath));
         } else {
             String apkDestPath = packageStagingDirectory + "/base.apk";
-            commands.add(busybox + " gzip -dc " + backupDir.getAbsolutePath() + "/" + apk + " > " + apkDestPath);
+            //commands.add(busybox + " gzip -dc " + backupDir.getAbsolutePath() + "/" + apk + " > " + apkDestPath);
+            commands.add("cat " + backupDir.getAbsolutePath() + "/" + apk + " > " + apkDestPath);
             commands.add(String.format("%s -r %s", installCmd, apkDestPath));
             commands.add(String.format("%s rm -r %s", busybox, apkDestPath));
         }
@@ -657,7 +647,7 @@ public class ShellCommands implements CommandHandler.UnexpectedExceptionListener
                 },
                 err::add, e -> Log.e(TAG, "restoreUserSplitApk: ", e), this);
 
-        try (ZipFile zipFile = new ZipFile(backupDir.getAbsolutePath() + "/" + appInfo.getPackageName() + ".apks")) {
+        try (ZipFile zipFile = new ZipFile(backupDir.getAbsolutePath() + "/base.apks")) {
             Enumeration<? extends ZipEntry> zipEntries = zipFile.entries();
             int currentApkFile = 0;
             while (zipEntries.hasMoreElements()) {
