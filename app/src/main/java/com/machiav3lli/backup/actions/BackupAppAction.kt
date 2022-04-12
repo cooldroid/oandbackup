@@ -573,9 +573,8 @@ open class BackupAppAction(context: Context, work: AppActionWork?, shell: ShellH
             if (compress) {
                 options += " --compress"
             }
-            val fullFilePath =
-                backupInstanceDir.getPath(context, backupInstanceDir.uri!!).plus("/")
-                    .plus(backupFilename)
+            val fullFilePath = backupInstanceDir.getPath(context, backupInstanceDir.uri!!)
+                .plus(File.separator).plus(backupFilename)
             options += " --archive ${quote(fullFilePath)}"
             options += " --exclude ${quote(exclude)}"
             if (OABX.prefFlag(PREFS_EXCLUDECACHE, true)) {

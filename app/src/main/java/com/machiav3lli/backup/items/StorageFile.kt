@@ -279,9 +279,9 @@ open class StorageFile {
                                 // NOTE: lockups occur in emulator (or A12?) for certain paths
                                 // e.g. /storage/emulated/$user
                                 val possiblePaths = listOf(
+                                    "/mnt/runtime/full/$storage/$subpath",
                                     "/mnt/media_rw/$storage/$subpath",
                                     "/mnt/pass_through/$user/$storage/$subpath",
-                                    "/mnt/runtime/full/$storage/$subpath",
                                     "/mnt/runtime/default/$storage/$subpath",
 
                                     // lockups! primary links to /storage/emulated/$user and all self etc.
@@ -518,7 +518,24 @@ open class StorageFile {
                 } else {
                     "storage" + File.separator + docId.replace(":", File.separator)
                 }
+            } else if ("com.oasisfeng.island.files.shuttle" == uri.authority) {
+                val docId = DocumentsContract.getDocumentId(uri)
+                val split = docId.split(":").toTypedArray()
+                val type = split[0]
+                // This is for checking Main Memory
+                return if ("primary".equals(type, ignoreCase = true)) {
+                    if (split.size > 1) {
+                        "/storage/emulated/0" + File.separator + split[1]
+                    } else {
+                        "/storage/emulated/0"
+                    }
+                    // This is for checking SD Card
+                } else {
+                    "storage" + File.separator + docId.replace(":", File.separator)
+                }
             }
+        } else if ("file" == uri.scheme) {
+            return uri.path
         }
         return null
     }
