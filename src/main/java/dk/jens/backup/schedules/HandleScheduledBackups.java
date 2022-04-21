@@ -175,7 +175,7 @@ public class HandleScheduledBackups
                         crypto.encryptFromAppInfo(context, backupDir, appInfo, subMode, prefs);
                         if(crypto.isErrorSet())
                         {
-                            Crypto.cleanUpEncryptedFiles(new File(backupDir, appInfo.getPackageName()), appInfo.getSourceDir(), appInfo.getDataDir(), subMode, prefs.getBoolean("backupExternalFiles", false), prefs.getBoolean("backupExpansionFiles", false));
+                            Crypto.cleanUpEncryptedFiles(new File(backupDir, appInfo.getPackageName()), appInfo.getSourceDir(), appInfo.getDataDir(), subMode, prefs.getBoolean(Constants.PREFS_BACKUP_EXTERNAL_FILES, false), prefs.getBoolean("backupExpansionFiles", false));
                             errorFlag = true;
                         }
                     }

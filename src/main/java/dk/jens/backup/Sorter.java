@@ -1,10 +1,14 @@
 package dk.jens.backup;
 
+import android.annotation.SuppressLint;
 import android.content.SharedPreferences;
+import android.util.Log;
 import android.util.SparseIntArray;
 import dk.jens.backup.adapters.AppInfoAdapter;
 
+import java.text.ParseException;
 import java.util.Comparator;
+import java.util.Objects;
 
 public class Sorter
 {
@@ -89,20 +93,37 @@ public class Sorter
     public static Comparator<AppInfo> appInfoPackageNameComparator = (m1, m2) ->
             m1.getPackageName().compareToIgnoreCase(m2.getPackageName());
     public static Comparator<AppInfo> appInfoLastUpdatedComparator = (m1, m2) ->
-            Long.compare(m2.getLastUpdateTime(), m1.getLastUpdateTime());
+    {
+        try {
+            return Long.compare(Objects.requireNonNull(Utils.simpleDateFormat.parse(m2.getBackupDate())).getTime(),
+                    Objects.requireNonNull(Utils.simpleDateFormat.parse(m1.getBackupDate())).getTime());
+        } catch (ParseException e) {
+            e.printStackTrace();
+        }
+        return 0;
+    };
     public static Comparator<AppInfo> appInfoBackupDateComparator = (m1, m2) -> {
         LogFile logInfoM1 = m1.getLogInfo();
         LogFile logInfoM2 = m2.getLogInfo();
         long lastBackupMillisM1 = -1, lastBackupMillisM2 = -1;
         if (logInfoM1 != null) {
-            lastBackupMillisM1 = logInfoM1.getLastBackupMillis();
+            try {
+                lastBackupMillisM1 = Objects.requireNonNull(Utils.logFileDateFormat.parse(logInfoM1.getBackupDate())).getTime();
+            } catch (ParseException e) {
+                e.printStackTrace();
+            }
         }
         if (logInfoM2 != null) {
-            lastBackupMillisM2 = logInfoM2.getLastBackupMillis();
+            try {
+                lastBackupMillisM2 = Objects.requireNonNull(Utils.logFileDateFormat.parse(logInfoM2.getBackupDate())).getTime();
+            } catch (ParseException e) {
+                e.printStackTrace();
+            }
         }
         return Long.compare(lastBackupMillisM2, lastBackupMillisM1);
     };
 
+    @SuppressLint("NonConstantResourceId")
     public void sort(int id)
     {
         switch(id)

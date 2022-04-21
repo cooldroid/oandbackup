@@ -1,5 +1,6 @@
 package dk.jens.backup;
 
+import android.annotation.SuppressLint;
 import android.app.AlertDialog;
 import android.content.DialogInterface;
 import android.content.Intent;
@@ -311,7 +312,7 @@ implements OnClickListener, BatchConfirmDialog.ConfirmListener
                 Constants.PREFS_ENABLECRYPTO, false) &&
                 Crypto.isAvailable(this))
             crypto = getCrypto();
-        PowerManager.WakeLock wl = powerManager.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, TAG);
+        @SuppressLint("InvalidWakeLockTag") PowerManager.WakeLock wl = powerManager.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, TAG);
         if(prefs.getBoolean("acquireWakelock", true))
         {
             wl.acquire();
@@ -349,7 +350,7 @@ implements OnClickListener, BatchConfirmDialog.ConfirmListener
                         crypto.encryptFromAppInfo(this, backupDir, appInfo, mode, prefs);
                         if(crypto.isErrorSet())
                         {
-                            Crypto.cleanUpEncryptedFiles(new File(backupDir, appInfo.getPackageName()), appInfo.getSourceDir(), appInfo.getDataDir(), mode, prefs.getBoolean("backupExternalFiles", false), prefs.getBoolean("backupExpansionFiles", false));
+                            Crypto.cleanUpEncryptedFiles(new File(backupDir, appInfo.getPackageName()), appInfo.getSourceDir(), appInfo.getDataDir(), mode, prefs.getBoolean(Constants.PREFS_BACKUP_EXTERNAL_FILES, false), prefs.getBoolean("backupExpansionFiles", false));
                             errorFlag = true;
                         }
                     }

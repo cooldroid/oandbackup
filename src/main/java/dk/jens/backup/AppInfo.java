@@ -8,28 +8,29 @@ public class AppInfo
 implements Comparable<AppInfo>, Parcelable
 {
     private LogFile logInfo;
-    private String label, packageName, versionName, sourceDir, dataDir;
+    private String label, packageName, versionName, sourceDir, dataDir, backupDate;
     private int versionCode, backupMode;
-    private long lastUpdateTime;
-    private boolean system, installed, checked, disabled, splitApk;
+    private boolean system, installed, checked, disabled, hasApk, hasAppData, hasExternalData;
+    private String[] splitSourceDirs;
     public Bitmap icon;
     public static final int MODE_UNSET = 0;
     public static final int MODE_APK = 1;
     public static final int MODE_DATA = 2;
     public static final int MODE_BOTH = 3;
 
-    public AppInfo(String packageName, String label, String versionName, int versionCode, long lastUpdateTime, String sourceDir, String dataDir, boolean system, boolean installed, boolean splitApk)
+    public AppInfo(String packageName, String label, String versionName, int versionCode, String backupDate,
+                   String sourceDir, String dataDir, boolean system, boolean installed, String[] splitSourceDirs)
     {
         this.label = label;
         this.packageName = packageName;
         this.versionName = versionName;
         this.versionCode = versionCode;
-        this.lastUpdateTime = lastUpdateTime;
+        this.backupDate = backupDate;
         this.sourceDir = sourceDir;
         this.dataDir = dataDir;
         this.system = system;
         this.installed = installed;
-        this.splitApk = splitApk;
+        this.splitSourceDirs = splitSourceDirs;
         this.backupMode = MODE_UNSET;
     }
     public String getPackageName()
@@ -48,8 +49,8 @@ implements Comparable<AppInfo>, Parcelable
     {
         return versionCode;
     }
-    public long getLastUpdateTime() {
-        return lastUpdateTime;
+    public String getBackupDate() {
+        return backupDate;
     }
     public String getSourceDir()
     {
@@ -75,10 +76,19 @@ implements Comparable<AppInfo>, Parcelable
     public void setBackupMode(int modeToAdd)
     {
         // add only if both values are different and neither is MODE_BOTH
-        if(backupMode == MODE_BOTH || modeToAdd == MODE_BOTH)
+        if(backupMode == MODE_BOTH || modeToAdd == MODE_BOTH) {
             backupMode = MODE_BOTH;
+            this.hasApk = this.hasAppData = true;
+        }
         else if(modeToAdd != backupMode)
             backupMode += modeToAdd;
+        if (modeToAdd == MODE_APK)
+            this.hasApk = true;
+        if (modeToAdd == MODE_DATA)
+            this.hasAppData = true;
+    }
+    public void setHasExternalData(boolean hasExternalData) {
+        this.hasExternalData = hasExternalData;
     }
     public boolean isChecked()
     {
@@ -104,9 +114,17 @@ implements Comparable<AppInfo>, Parcelable
     {
         return installed;
     }
-    public boolean isSplitApk()
-    {
-        return splitApk;
+    public String[] getSplitSourceDirs() {
+        return splitSourceDirs;
+    }
+    public boolean isHasApk() {
+        return hasApk;
+    }
+    public boolean isHasAppData() {
+        return hasAppData;
+    }
+    public boolean isHasExternalData() {
+        return hasExternalData;
     }
     // list of single files used by special backups - only for compatibility now
     public String[] getFilesList()
@@ -139,9 +157,10 @@ implements Comparable<AppInfo>, Parcelable
         out.writeString(sourceDir);
         out.writeString(dataDir);
         out.writeInt(versionCode);
-        out.writeLong(lastUpdateTime);
+        out.writeString(backupDate);
         out.writeInt(backupMode);
-        out.writeBooleanArray(new boolean[] {system, installed, checked, splitApk});
+        out.writeBooleanArray(new boolean[] {system, installed, checked});
+        out.writeStringArray(splitSourceDirs);
         out.writeParcelable(icon, flags);
     }
     public static final Parcelable.Creator<AppInfo> CREATOR = new Parcelable.Creator<AppInfo>()
@@ -164,14 +183,15 @@ implements Comparable<AppInfo>, Parcelable
         sourceDir = in.readString();
         dataDir = in.readString();
         versionCode = in.readInt();
-        lastUpdateTime = in.readLong();
+        backupDate = in.readString();
         backupMode = in.readInt();
-        boolean[] bools = new boolean[4];
+        boolean[] bools = new boolean[3];
         in.readBooleanArray(bools);
         system = bools[0];
         installed = bools[1];
         checked = bools[2];
-        splitApk = bools[3];
+        splitSourceDirs = new String[1];
+        in.readStringArray(splitSourceDirs);
         icon = in.readParcelable(getClass().getClassLoader());
     }
 }

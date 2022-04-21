@@ -43,7 +43,7 @@ public class BackupTask extends ActionTask {
                 Crypto.cleanUpEncryptedFiles(new File(backupDirectory,
                     appInfo.getPackageName()), appInfo.getSourceDir(),
                     appInfo.getDataDir(), mode,
-                    prefs.getBoolean("backupExternalFiles", false),
+                    prefs.getBoolean(Constants.PREFS_BACKUP_EXTERNAL_FILES, false),
                     prefs.getBoolean("backupExpansionFiles", false));
                 result++;
             }

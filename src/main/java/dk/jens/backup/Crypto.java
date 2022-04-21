@@ -188,7 +188,7 @@ public class Crypto
                 if(f.exists())
                     files[i++] = f;
             }
-            if(prefs.getBoolean("backupExternalFiles", false))
+            if(prefs.getBoolean(Constants.PREFS_BACKUP_EXTERNAL_FILES, false))
             {
                 File extFiles = new File(backupSubDir, ShellCommands.EXTERNAL_FILES  + "/" + data + ".tar.gz");
                 if(extFiles.exists())

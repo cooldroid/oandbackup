@@ -17,6 +17,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.Date;
 import java.util.List;
 
 public class AppInfoHelper
@@ -76,13 +77,11 @@ public class AppInfoHelper
                 // package at least on cm14
                 if(pinfo.packageName.equals("android") && dataDir == null)
                     dataDir = "/data/system";
-                boolean isSplitApk;
-                isSplitApk = (pinfo.applicationInfo.splitPublicSourceDirs != null && pinfo.applicationInfo.splitPublicSourceDirs.length > 0);
                 AppInfo appInfo = new AppInfo(pinfo.packageName,
                     pinfo.applicationInfo.loadLabel(pm).toString(),
-                    pinfo.versionName, pinfo.versionCode, pinfo.lastUpdateTime,
+                    pinfo.versionName, pinfo.versionCode, Utils.simpleDateFormat.format(new Date(pinfo.lastUpdateTime)),
                     pinfo.applicationInfo.sourceDir, dataDir, isSystem,
-                    true, isSplitApk);
+                    true, pinfo.applicationInfo.splitPublicSourceDirs);
                 File subdir = new File(backupDir, pinfo.packageName);
                 if(subdir.exists())
                 {
@@ -112,11 +111,11 @@ public class AppInfoHelper
                     if(!packageNames.contains(folder))
                     {
                         LogFile logInfo = new LogFile(new File(backupDir.getAbsolutePath() + "/" + folder), folder);
-                        if(logInfo.getLastBackupMillis() > 0)
+                        if(!logInfo.getBackupDate().isEmpty())
                         {
-                            AppInfo appInfo = new AppInfo(logInfo.getPackageName(), logInfo.getLabel(), logInfo.getVersionName(),
-                                    logInfo.getVersionCode(), logInfo.getLastBackupMillis(), logInfo.getSourceDir(),
-                                    logInfo.getDataDir(), logInfo.isSystem(), false, logInfo.isSplitApk());
+                            AppInfo appInfo = new AppInfo(logInfo.getPackageName(), logInfo.getPackageLabel(), logInfo.getVersionName(),
+                                    logInfo.getVersionCode(), logInfo.getBackupDate(), logInfo.getSourceDir(),
+                                    logInfo.getDataDir(), logInfo.isSystem(), false, logInfo.getSplitSourceDirs());
                             appInfo.setLogInfo(logInfo);
                             list.add(appInfo);
                         }

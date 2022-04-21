@@ -1,9 +1,8 @@
 package dk.jens.backup.adapters;
 
+import android.annotation.SuppressLint;
 import android.content.Context;
 import android.graphics.Color;
-import android.graphics.drawable.Drawable;
-import android.text.TextUtils;
 import android.util.DisplayMetrics;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -19,9 +18,11 @@ import dk.jens.backup.R;
 import dk.jens.backup.Sorter;
 import dk.jens.backup.Utils;
 
+import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
+import java.util.Objects;
 
 public class AppInfoAdapter extends ArrayAdapter<AppInfo>
 {
@@ -68,6 +69,7 @@ public class AppInfoAdapter extends ArrayAdapter<AppInfo>
     {
         return items.size();
     }
+    @SuppressLint("SetTextI18n")
     @Override
     public View getView(int pos, View convertView, ViewGroup parent)
     {
@@ -106,7 +108,7 @@ public class AppInfoAdapter extends ArrayAdapter<AppInfo>
                 viewHolder.icon.setVisibility(View.GONE);
             }
             TextView labelTextView = viewHolder.label;
-            if (appInfo.isSplitApk()) {
+            if (appInfo.getSplitSourceDirs() != null) {
                 labelTextView.setText(appInfo.getLabel() + " **");
                 /*
                 Drawable img = context.getResources().getDrawable(R.drawable.checkmark);
@@ -133,7 +135,8 @@ public class AppInfoAdapter extends ArrayAdapter<AppInfo>
             }
             if(appInfo.getLogInfo() != null)
             {
-                viewHolder.lastBackup.setText(Utils.formatDate(new Date(appInfo.getLogInfo().getLastBackupMillis()), localTimestampFormat));
+                viewHolder.lastBackup.setText(Utils.convertDate(appInfo.getLogInfo().getBackupDate(),
+                        Utils.logFileDateFormat, Utils.simpleDateFormat));
             }
             else
             {
@@ -145,7 +148,7 @@ public class AppInfoAdapter extends ArrayAdapter<AppInfo>
                 if(appInfo.isDisabled())
                     color = Color.rgb(7, 87, 117);
                 viewHolder.packageName.setTextColor(color);
-                viewHolder.lastUpdate.setText(Utils.formatDate(new Date(appInfo.getLastUpdateTime()), localTimestampFormat));
+                viewHolder.lastUpdate.setText(appInfo.getBackupDate());
             }
             else
             {
@@ -369,7 +372,12 @@ public class AppInfoAdapter extends ArrayAdapter<AppInfo>
         {
             if(appInfo.getLogInfo() != null)
             {
-                long lastBackup = appInfo.getLogInfo().getLastBackupMillis();
+                long lastBackup = 0;
+                try {
+                    lastBackup = Objects.requireNonNull(Utils.logFileDateFormat.parse(appInfo.getLogInfo().getBackupDate())).getTime();
+                } catch (ParseException e) {
+                    e.printStackTrace();
+                }
                 long diff = System.currentTimeMillis() - lastBackup;
                 if(lastBackup > 0 && diff > (days * 24 * 60 * 60 * 1000f))
                 {

@@ -3,13 +3,16 @@ package dk.jens.backup;
 import android.os.Parcel;
 import android.os.Parcelable;
 
+import java.util.Date;
+
 public class AppInfoSpecial extends AppInfo
 implements Parcelable
 {
     private String[] files;
     public AppInfoSpecial(String packageName, String label, String versionName, int versionCode)
     {
-        super(packageName, label, versionName, versionCode, System.currentTimeMillis(), "", "", true, true, false);
+        super(packageName, label, versionName, versionCode, Utils.simpleDateFormat.format(new Date()),
+                "", "", true, true, new String[0]);
     }
     public String[] getFilesList()
     {

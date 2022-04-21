@@ -13,6 +13,10 @@ public class BackupRestoreHelper
         BACKUP, RESTORE
     }
 
+//    private String getBackupFileFolderName() {
+//
+//    }
+
     public int backup(Context context, File backupDir, AppInfo appInfo, ShellCommands shellCommands, int backupMode)
     {
         int ret = 0;
@@ -29,7 +33,6 @@ public class BackupRestoreHelper
                     ShellCommands.deleteBackup(new File(backupSubDir, apk));
                     if(appInfo.getLogInfo().isEncrypted())
                         ShellCommands.deleteBackup(new File(backupSubDir, apk + ".gpg"));
-
                 }
             }
         }
@@ -42,10 +45,10 @@ public class BackupRestoreHelper
         else
         {
             if (appInfo.isSystem()) {
-                ret = shellCommands.doBackup(context, backupSubDir, appInfo.getLabel(), appInfo.getDataDir(), "", backupMode);
+                ret = shellCommands.doBackup(context, backupSubDir, appInfo, appInfo.getLabel(), appInfo.getDataDir(), "", backupMode);
                 appInfo.setBackupMode(AppInfo.MODE_DATA);
             } else {
-                ret = shellCommands.doBackup(context, backupSubDir, appInfo.getLabel(), appInfo.getDataDir(), appInfo.getSourceDir(), backupMode);
+                ret = shellCommands.doBackup(context, backupSubDir, appInfo, appInfo.getLabel(), appInfo.getDataDir(), appInfo.getSourceDir(), backupMode);
                 appInfo.setBackupMode(backupMode);
             }
         }
@@ -72,7 +75,7 @@ public class BackupRestoreHelper
                     //apkRet = shellCommands.restoreSystemApk(backupSubDir,
                     //    appInfo.getLabel(), apk);
                 } else {
-                    if (appInfo.isSplitApk()) {
+                    if (appInfo.getSplitSourceDirs().length > 0) {
                         apkRet = shellCommands.restoreUserSplitApk(context, appInfo, backupSubDir);
                     } else {
                         apkRet = shellCommands.restoreUserApk(backupSubDir,

@@ -107,7 +107,7 @@ public class ShellCommands implements CommandHandler.UnexpectedExceptionListener
     }
 
     @SuppressLint("NewApi")
-    public int doBackup(Context context, File backupSubDir, String label, String packageData, String packageApk, int backupMode)
+    public int doBackup(Context context, File backupSubDir, AppInfo appInfo, String label, String packageData, String packageApk, int backupMode)
     {
         String backupSubDirPath = swapBackupDirPath(backupSubDir.getAbsolutePath());
         Log.i(TAG, "backup: " + label);
@@ -174,9 +174,10 @@ public class ShellCommands implements CommandHandler.UnexpectedExceptionListener
                 break;
         }
         File externalFilesDir = getExternalFilesDirPath(context, packageData);
-        boolean backupExternalFiles = prefs.getBoolean("backupExternalFiles", false);
+        boolean backupExternalFiles = prefs.getBoolean(Constants.PREFS_BACKUP_EXTERNAL_FILES, false);
         if(backupExternalFiles && backupMode != AppInfo.MODE_APK && externalFilesDir != null) {
             if (folderSize(externalFilesDir) > 0) {
+                appInfo.setHasExternalData(true);
                 StringBuilder externalExcludes = new StringBuilder();
                 for (String exclFolder: externalExcludeFolders) {
                     externalExcludes.append(" --exclude='").append(folder).append("/").append(exclFolder).append("'");
@@ -253,7 +254,7 @@ public class ShellCommands implements CommandHandler.UnexpectedExceptionListener
         */
         // delete old encrypted files if encryption is not enabled
         if (!prefs.getBoolean(Constants.PREFS_ENABLECRYPTO, false))
-            Crypto.cleanUpEncryptedFiles(backupSubDir, packageApk, packageData, backupMode, prefs.getBoolean("backupExternalFiles", false), prefs.getBoolean("backupExpansionFiles", false));
+            Crypto.cleanUpEncryptedFiles(backupSubDir, packageApk, packageData, backupMode, prefs.getBoolean(Constants.PREFS_BACKUP_EXTERNAL_FILES, false), prefs.getBoolean("backupExpansionFiles", false));
         return ret;
     }
 
@@ -336,7 +337,7 @@ public class ShellCommands implements CommandHandler.UnexpectedExceptionListener
             List<String> commands = new ArrayList<>();
 
             killPackage(context, packageName);
-            if(prefs.getBoolean("backupExternalFiles", false))
+            if(prefs.getBoolean(Constants.PREFS_BACKUP_EXTERNAL_FILES, false))
             {
                 File externalFiles = new File(backupSubDir, EXTERNAL_FILES + ".tar.gz");
                 if (externalFiles.exists()) {

@@ -26,6 +26,7 @@ public class Constants {
     public static final String PREFS_LANGUAGES_DEFAULT = "system";
     public static final String PREFS_ENABLESPECIALBACKUPS = "enableSpecialBackups";
     public static final String PREFS_ENABLECRYPTO = "enableCrypto";
+    public static final String PREFS_BACKUP_EXTERNAL_FILES = "backupExternalFiles";
 
     public static final String BUNDLE_THREADID = "threadId";
     public static final String BUNDLE_STATECHECKED = "stateChecked";
