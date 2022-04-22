@@ -12,12 +12,16 @@ import android.util.Log;
 import android.widget.Toast;
 
 import java.io.File;
+import java.security.NoSuchAlgorithmException;
 import java.text.DateFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
-import java.util.Locale;
 import java.util.Objects;
+import java.util.Random;
+
+import javax.crypto.Cipher;
+import javax.crypto.NoSuchPaddingException;
 
 import dk.jens.backup.ui.HandleMessages;
 
@@ -142,5 +146,31 @@ public class Utils {
             e.printStackTrace();
         }
         return strDate;
+    }
+
+    public static void deleteDirectory(File directoryToBeDeleted) {
+        File[] allContents = directoryToBeDeleted.listFiles();
+        if (allContents != null) {
+            for (File file : allContents) {
+                deleteDirectory(file);
+            }
+        }
+        directoryToBeDeleted.delete();
+    }
+
+    public static byte[] initIv() {
+        int blockSize;
+        try {
+            blockSize = Cipher.getInstance("AES/GCM/NoPadding").getBlockSize();
+        } catch (NoSuchAlgorithmException | NoSuchPaddingException e) {
+            blockSize = 32;
+        }
+
+        // create byte array
+        byte[] bytes = new byte[blockSize];
+        // put the next byte in the array
+        new Random().nextBytes(bytes);
+
+        return  bytes;
     }
 }

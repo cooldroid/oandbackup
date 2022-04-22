@@ -350,7 +350,7 @@ implements OnClickListener, BatchConfirmDialog.ConfirmListener
                         crypto.encryptFromAppInfo(this, backupDir, appInfo, mode, prefs);
                         if(crypto.isErrorSet())
                         {
-                            Crypto.cleanUpEncryptedFiles(new File(backupDir, appInfo.getPackageName()), appInfo.getSourceDir(), appInfo.getDataDir(), mode, prefs.getBoolean(Constants.PREFS_BACKUP_EXTERNAL_FILES, false), prefs.getBoolean("backupExpansionFiles", false));
+                            Crypto.cleanUpEncryptedFiles(new File(backupDir, appInfo.getPackageName()), mode, prefs.getBoolean(Constants.PREFS_BACKUP_EXTERNAL_FILES, false), prefs.getBoolean("backupExpansionFiles", false));
                             errorFlag = true;
                         }
                     }

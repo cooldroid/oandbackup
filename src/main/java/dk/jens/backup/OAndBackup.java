@@ -26,10 +26,12 @@ import android.widget.ListView;
 import android.widget.SearchView;
 import android.widget.SearchView.OnQueryTextListener;
 import android.widget.Toast;
+
 import androidx.annotation.NonNull;
 import androidx.annotation.RestrictTo;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
+
 import com.annimon.stream.IntStream;
 import com.annimon.stream.Optional;
 import com.topjohnwu.superuser.Shell;
@@ -50,8 +52,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 
 public class OAndBackup extends BaseActivity
-implements SharedPreferences.OnSharedPreferenceChangeListener, ActionListener
-{
+        implements SharedPreferences.OnSharedPreferenceChangeListener, ActionListener {
     public static final String TAG = Constants.TAG;
     static final int BATCH_REQUEST = 1;
     static final int TOOLS_REQUEST = 2;
@@ -91,8 +92,7 @@ implements SharedPreferences.OnSharedPreferenceChangeListener, ActionListener
     }
 
     @Override
-    public void onCreate(Bundle savedInstanceState)
-    {
+    public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         Utils.logDeviceInfo(this, TAG);
         setContentView(R.layout.main);
@@ -102,28 +102,27 @@ implements SharedPreferences.OnSharedPreferenceChangeListener, ActionListener
         boolean checked = false;
         int firstVisiblePosition = 0;
         ArrayList<String> users = null;
-        if(savedInstanceState != null)
-        {
+        if (savedInstanceState != null) {
             threadId = savedInstanceState.getLong(Constants.BUNDLE_THREADID);
             Utils.reShowMessage(handleMessages, threadId);
             checked = savedInstanceState.getBoolean(Constants.BUNDLE_STATECHECKED);
             firstVisiblePosition = savedInstanceState.getInt(
-                Constants.BUNDLE_FIRSTVISIBLEPOSITION);
+                    Constants.BUNDLE_FIRSTVISIBLEPOSITION);
             users = savedInstanceState.getStringArrayList(Constants.BUNDLE_USERS);
         } else {
             // only copy assets if onCreate is not called due to a configuration change
             final AssetHandlerTask assetHandlerTask =
-                new AssetHandlerTask();
+                    new AssetHandlerTask();
             assetHandlerTask.execute(this);
         }
         final String[] perms = {
-            "android.permission.WRITE_EXTERNAL_STORAGE",
-            "android.permission.READ_EXTERNAL_STORAGE",
+                "android.permission.WRITE_EXTERNAL_STORAGE",
+                "android.permission.READ_EXTERNAL_STORAGE",
         };
-        if(ContextCompat.checkSelfPermission(this, Manifest.permission
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission
                 .WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
             ActivityCompat.requestPermissions(this, perms,
-                REQUEST_PERMISSIONS_CODE);
+                    REQUEST_PERMISSIONS_CODE);
         } else {
             /*
              * only set threadId here if this is not after a configuration change.
@@ -137,12 +136,12 @@ implements SharedPreferences.OnSharedPreferenceChangeListener, ActionListener
 
     @Override
     public void onRequestPermissionsResult(int requestCode,
-            @NonNull String[] permissions, @NonNull int[] grantResults) {
-        if(requestCode == REQUEST_PERMISSIONS_CODE) {
-            if(IntStream.of(grantResults).allMatch(result -> result ==
+                                           @NonNull String[] permissions, @NonNull int[] grantResults) {
+        if (requestCode == REQUEST_PERMISSIONS_CODE) {
+            if (IntStream.of(grantResults).allMatch(result -> result ==
                     PackageManager.PERMISSION_GRANTED)) {
                 threadId = startUiThread(false, 0, new ArrayList<>());
-                if(!canAccessExternalStorage()) {
+                if (!canAccessExternalStorage()) {
                     /*
                      * Check if the external storage is accessible after the
                      * permissions have been granted. If this is not the case
@@ -159,46 +158,46 @@ implements SharedPreferences.OnSharedPreferenceChangeListener, ActionListener
                 }
             } else {
                 Log.w(TAG, String.format("Permissions were not granted: %s -> %s",
-                    Arrays.toString(permissions), Arrays.toString(grantResults)));
+                        Arrays.toString(permissions), Arrays.toString(grantResults)));
                 Toast.makeText(this, getString(
-                    R.string.permission_not_granted), Toast.LENGTH_LONG).show();
+                        R.string.permission_not_granted), Toast.LENGTH_LONG).show();
             }
         } else {
             Log.w(TAG, String.format("Unknown permissions request code: %s",
-                requestCode));
+                    requestCode));
         }
     }
 
     private boolean canAccessExternalStorage() {
         final File externalStorage = Environment.getExternalStorageDirectory();
         return externalStorage != null && externalStorage.canRead() &&
-            externalStorage.canWrite();
+                externalStorage.canWrite();
     }
 
     private void restart() {
         @SuppressLint("UnspecifiedImmutableFlag") final PendingIntent pendingIntent = PendingIntent.getActivity(this,
-            0, getIntent(), PendingIntent.FLAG_CANCEL_CURRENT);
+                0, getIntent(), PendingIntent.FLAG_CANCEL_CURRENT);
         new AlertDialog.Builder(this)
-            .setTitle(R.string.restart_dialog)
-            .setPositiveButton(R.string.dialogOK, (dialog, which) -> {
-                final AlarmManager alarmManager = (AlarmManager) getSystemService(
-                    Context.ALARM_SERVICE);
-                if(alarmManager != null) {
-                    // Schedule an immediate restart
-                    alarmManager.set(AlarmManager.RTC, System.currentTimeMillis() +
-                        500L, pendingIntent);
-                    System.exit(0);
-                } else {
-                    Log.w(TAG, "Restart could not be scheduled");
-                }
-            })
-            .setNegativeButton(R.string.dialogNo, (dialog, which) -> {})
-            .show();
+                .setTitle(R.string.restart_dialog)
+                .setPositiveButton(R.string.dialogOK, (dialog, which) -> {
+                    final AlarmManager alarmManager = (AlarmManager) getSystemService(
+                            Context.ALARM_SERVICE);
+                    if (alarmManager != null) {
+                        // Schedule an immediate restart
+                        alarmManager.set(AlarmManager.RTC, System.currentTimeMillis() +
+                                500L, pendingIntent);
+                        System.exit(0);
+                    } else {
+                        Log.w(TAG, "Restart could not be scheduled");
+                    }
+                })
+                .setNegativeButton(R.string.dialogNo, (dialog, which) -> {
+                })
+                .show();
     }
 
     @Override
-    public void onResume()
-    {
+    public void onResume() {
         super.onResume();
         // reload handlemessages in case its context has been garbage collected
         handleMessages = new HandleMessages(this);
@@ -211,79 +210,73 @@ implements SharedPreferences.OnSharedPreferenceChangeListener, ActionListener
     private long startUiThread(boolean checked, int firstVisiblePosition,
                                ArrayList<String> users) {
         final Thread initThread = new Thread(new InitRunnable(checked,
-            firstVisiblePosition, users));
+                firstVisiblePosition, users));
         uiThread = Optional.of(initThread);
         Shell.getShell(shell -> initThread.start());
         return initThread.getId();
     }
 
     @Override
-    public void onDestroy()
-    {
-        if(handleMessages != null)
-        {
+    public void onDestroy() {
+        if (handleMessages != null) {
             handleMessages.endMessage();
         }
         super.onDestroy();
     }
+
     @Override
-    public void onSaveInstanceState(Bundle outState)
-    {
+    public void onSaveInstanceState(Bundle outState) {
         super.onSaveInstanceState(outState);
         outState.putBoolean(Constants.BUNDLE_STATECHECKED, true);
         outState.putLong(Constants.BUNDLE_THREADID, threadId);
         int firstVisiblePosition = 0;
-        if(listView != null)
+        if (listView != null)
             firstVisiblePosition = listView.getFirstVisiblePosition();
         outState.putInt(Constants.BUNDLE_FIRSTVISIBLEPOSITION, firstVisiblePosition);
-        if(shellCommands != null)
+        if (shellCommands != null)
             outState.putStringArrayList(Constants.BUNDLE_USERS,
-                shellCommands.getUsers());
+                    shellCommands.getUsers());
     }
 
     @Override
     public void onActionCalled(AppInfo appInfo,
-            BackupRestoreHelper.ActionType actionType, int mode) {
-        if(actionType == BackupRestoreHelper.ActionType.BACKUP) {
+                               BackupRestoreHelper.ActionType actionType, int mode) {
+        if (actionType == BackupRestoreHelper.ActionType.BACKUP) {
             callBackup(appInfo, mode);
-        } else if(actionType == BackupRestoreHelper.ActionType.RESTORE) {
+        } else if (actionType == BackupRestoreHelper.ActionType.RESTORE) {
             callRestore(appInfo, mode);
         } else {
             Log.e(TAG, "unknown actionType: " + actionType);
         }
     }
 
-    public void displayDialog(AppInfo appInfo)
-    {
-        if(!appInfo.isInstalled() && appInfo.getBackupMode() == AppInfo.MODE_DATA)
-        {
+    public void displayDialog(AppInfo appInfo) {
+        if (!appInfo.isInstalled() && appInfo.getBackupMode() == AppInfo.MODE_DATA) {
             Toast.makeText(this, getString(R.string.notInstalledModeDataWarning), Toast.LENGTH_LONG).show();
-        }
-        else
-        {
+        } else {
             Bundle arguments = new Bundle();
             arguments.putParcelable("appinfo", appInfo);
             BackupRestoreDialogFragment dialog = new BackupRestoreDialogFragment();
             dialog.setListener(this);
             dialog.setArguments(arguments);
-    //        dialog.show(getFragmentManager(), "DialogFragment");
+            //        dialog.show(getFragmentManager(), "DialogFragment");
             dialog.show(getFragmentManager(), "DialogFragment");
         }
     }
-    public void callBackup(final AppInfo appInfo, final int backupMode)
-    {
+
+    public void callBackup(final AppInfo appInfo, final int backupMode) {
         final BackupTask backupTask = new BackupTask(appInfo,
-            handleMessages, this, backupDir, shellCommands, backupMode);
+                handleMessages, this, backupDir, shellCommands, backupMode);
         backupTask.execute();
     }
-    public void callRestore(final AppInfo appInfo, final int mode)
-    {
+
+    public void callRestore(final AppInfo appInfo, final int mode) {
         final RestoreTask restoreTask = new RestoreTask(appInfo,
-            handleMessages, this, backupDir, shellCommands, mode);
+                handleMessages, this, backupDir, shellCommands, mode);
         restoreTask.execute();
     }
-    public Thread refresh()
-    {
+
+    public Thread refresh() {
         Thread refreshThread = new Thread(() -> {
             handleMessages.showMessage("", getString(R.string.collectingData));
             appInfoList = AppInfoHelper.getPackageInfo(OAndBackup.this, backupDir, true, PreferenceManager.getDefaultSharedPreferences(
@@ -291,8 +284,7 @@ implements SharedPreferences.OnSharedPreferenceChangeListener, ActionListener
                     true));
             runOnUiThread(() -> {
                 // temporary work-around until the race condition between refresh and oncreate when returning from batchactivity with changesmade have been fixed
-                if(adapter != null && sorter != null)
-                {
+                if (adapter != null && sorter != null) {
                     adapter.setNewOriginalValues(appInfoList);
                     sorter.sort(sorter.getFilteringMethod().getId());
                     sorter.sort(sorter.getSortingMethod().getId());
@@ -307,13 +299,16 @@ implements SharedPreferences.OnSharedPreferenceChangeListener, ActionListener
         // This method return a thread here to facilitate testing
         return refreshThread;
     }
-    public void refreshSingle(AppInfo appInfo)
-    {
-        if(backupDir != null)
-        {
-            LogFile logInfo = new LogFile(new File(backupDir, appInfo.getPackageName()), appInfo.getPackageName());
+
+    public void refreshSingle(AppInfo appInfo) {
+        if (backupDir != null) {
+            File subdir = new File(backupDir, appInfo.getPackageName());
+            File[] files = subdir.listFiles(File::isDirectory);
+            assert files != null;
+            LogFile logInfo = new LogFile(subdir, files[0].getName());
             int pos = appInfoList.indexOf(appInfo);
             appInfo.setLogInfo(logInfo);
+            AppInfoHelper.updateAppInfo(appInfo, logInfo);
             appInfoList.set(pos, appInfo);
             adapter.notifyDataSetChanged();
         }
@@ -324,44 +319,37 @@ implements SharedPreferences.OnSharedPreferenceChangeListener, ActionListener
     }
 
     @Override
-    public void onConfigurationChanged(Configuration newConfig)
-    {
+    public void onConfigurationChanged(Configuration newConfig) {
         super.onConfigurationChanged(newConfig);
         SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
         LanguageHelper.initLanguage(this, prefs.getString(
-            Constants.PREFS_LANGUAGES, Constants.PREFS_LANGUAGES_DEFAULT));
+                Constants.PREFS_LANGUAGES, Constants.PREFS_LANGUAGES_DEFAULT));
     }
+
     @Override
-    public void onActivityResult(int requestCode, int resultCode, Intent data)
-    {
+    public void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
-        if(requestCode == BATCH_REQUEST || requestCode == TOOLS_REQUEST)
-        {
-            if(appInfoList != null)
-            {
-                for(AppInfo appInfo : appInfoList)
-                {
+        if (requestCode == BATCH_REQUEST || requestCode == TOOLS_REQUEST) {
+            if (appInfoList != null) {
+                for (AppInfo appInfo : appInfoList) {
                     appInfo.setChecked(false);
                 }
             }
-            if(data != null)
-            {
+            if (data != null) {
                 boolean changesMade = data.getBooleanExtra("changesMade", false);
-                if(changesMade)
-                {
+                if (changesMade) {
                     refresh();
                 }
-                if(sorter != null)
-                {
+                if (sorter != null) {
                     sorter.sort(data.getIntExtra("filteringMethodId", 0));
                     sorter.sort(data.getIntExtra("sortingMethodId", 0));
                 }
             }
         }
     }
+
     @Override
-    public boolean onCreateOptionsMenu(Menu menu)
-    {
+    public boolean onCreateOptionsMenu(Menu menu) {
         // clear menu so menus from other activities aren't shown also
         menu.clear();
         MenuInflater inflater = getMenuInflater();
@@ -370,34 +358,30 @@ implements SharedPreferences.OnSharedPreferenceChangeListener, ActionListener
         SearchView search = (SearchView) mSearchItem.getActionView();
         search.setIconifiedByDefault(true);
         search.setQueryHint(getString(R.string.searchHint));
-        search.setOnQueryTextListener(new OnQueryTextListener()
-        {
+        search.setOnQueryTextListener(new OnQueryTextListener() {
             @Override
-            public boolean onQueryTextChange(String newText)
-            {
-                if(OAndBackup.this.adapter != null)
+            public boolean onQueryTextChange(String newText) {
+                if (OAndBackup.this.adapter != null)
                     OAndBackup.this.adapter.getFilter().filter(newText);
                 return true;
             }
+
             @Override
-            public boolean onQueryTextSubmit(String query)
-            {
-                if(OAndBackup.this.adapter != null)
+            public boolean onQueryTextSubmit(String query) {
+                if (OAndBackup.this.adapter != null)
                     OAndBackup.this.adapter.getFilter().filter(query);
                 return true;
             }
         });
         // man kan ikke bruge onCloseListener efter 3.2: http://code.google.com/p/android/issues/detail?id=25758
-        mSearchItem.setOnActionExpandListener(new MenuItem.OnActionExpandListener()
-        {
+        mSearchItem.setOnActionExpandListener(new MenuItem.OnActionExpandListener() {
             @Override
-            public boolean onMenuItemActionExpand(MenuItem item)
-            {
+            public boolean onMenuItemActionExpand(MenuItem item) {
                 return true;
             }
+
             @Override
-            public boolean onMenuItemActionCollapse(MenuItem item)
-            {
+            public boolean onMenuItemActionCollapse(MenuItem item) {
                 adapter.getFilter().filter("");
                 sorter.filterShowAll();
                 return true;
@@ -405,26 +389,24 @@ implements SharedPreferences.OnSharedPreferenceChangeListener, ActionListener
         });
         return true;
     }
+
     @Override
-    public boolean onPrepareOptionsMenu(Menu menu)
-    {
+    public boolean onPrepareOptionsMenu(Menu menu) {
         SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
         int filteringId = Sorter.convertFilteringId(prefs.getInt("filteringId", 0));
         MenuItem filterItem = menu.findItem(filteringId);
-        if(filterItem != null)
-        {
+        if (filterItem != null) {
             filterItem.setChecked(true);
         }
         int sortingId = Sorter.convertSortingId(prefs.getInt("sortingId", 1));
         MenuItem sortItem = menu.findItem(sortingId);
-        if(sortItem != null)
-        {
+        if (sortItem != null) {
             sortItem.setChecked(true);
         }
         return true;
     }
-    public Intent batchIntent(Class<?> batchClass, int operation)
-    {
+
+    public Intent batchIntent(Class<?> batchClass, int operation) {
         Intent batchIntent = new Intent(this, batchClass);
         batchIntent.putExtra("dk.jens.backup.operation", operation);
         batchIntent.putStringArrayListExtra("dk.jens.backup.users", shellCommands.getUsers());
@@ -435,10 +417,8 @@ implements SharedPreferences.OnSharedPreferenceChangeListener, ActionListener
 
     @SuppressLint("NonConstantResourceId")
     @Override
-    public boolean onOptionsItemSelected(MenuItem item)
-    {
-        switch(item.getItemId())
-        {
+    public boolean onOptionsItemSelected(MenuItem item) {
+        switch (item.getItemId()) {
             case R.id.refresh:
                 refresh();
                 break;
@@ -454,8 +434,7 @@ implements SharedPreferences.OnSharedPreferenceChangeListener, ActionListener
                 startActivity(new Intent(this, Scheduler.class));
                 break;
             case R.id.tools:
-                if(backupDir != null)
-                {
+                if (backupDir != null) {
                     Intent toolsIntent = new Intent(this, Tools.class);
                     toolsIntent.putExtra("dk.jens.backup.backupDir", backupDir);
                     toolsIntent.putStringArrayListExtra("dk.jens.backup.users", shellCommands.getUsers());
@@ -471,16 +450,15 @@ implements SharedPreferences.OnSharedPreferenceChangeListener, ActionListener
                 break;
         }
         return true;
-    }    
+    }
+
     @Override
-    public void onCreateContextMenu(ContextMenu menu, View v, ContextMenuInfo menuInfo)
-    {
+    public void onCreateContextMenu(ContextMenu menu, View v, ContextMenuInfo menuInfo) {
         MenuInflater inflater = getMenuInflater();
         inflater.inflate(R.menu.contextmenu, menu);
         AdapterContextMenuInfo info = (AdapterContextMenuInfo) menuInfo;
         AppInfo appInfo = adapter.getItem(info.position);
-        if(appInfo.getLogInfo() == null)
-        {
+        if (appInfo.getLogInfo() == null) {
             menu.removeItem(R.id.deleteBackup);
             menu.removeItem(R.id.share);
         }
@@ -489,59 +467,53 @@ implements SharedPreferences.OnSharedPreferenceChangeListener, ActionListener
 
     @SuppressLint("NonConstantResourceId")
     @Override
-    public boolean onContextItemSelected(MenuItem item)
-    {
+    public boolean onContextItemSelected(MenuItem item) {
         final AdapterContextMenuInfo info = (AdapterContextMenuInfo) item.getMenuInfo();
-        switch(item.getItemId())
-        {
+        switch (item.getItemId()) {
             case R.id.uninstall:
                 new AlertDialog.Builder(this)
-                .setTitle(adapter.getItem(info.position).getLabel())
-                .setMessage(R.string.uninstallDialogMessage)
-                .setPositiveButton(R.string.dialogYes, (dialog, which) -> {
-                    Thread uninstallThread = new Thread(() -> {
-                        AppInfo appInfo = adapter.getItem(info.position);
-                        Log.i(TAG, "uninstalling " + appInfo.getLabel());
-                        handleMessages.showMessage(appInfo.getLabel(), getString(R.string.uninstallProgress));
-                        int ret = shellCommands.uninstall(appInfo.getPackageName(), appInfo.getSourceDir(), appInfo.getDataDir(), appInfo.isSystem());
-                        refresh();
-                        handleMessages.endMessage();
-                        if(ret == 0)
-                        {
-                            NotificationHelper.showNotification(OAndBackup.this, OAndBackup.class, notificationId++, getString(R.string.uninstallSuccess), appInfo.getLabel(), true);
-                        }
-                        else
-                        {
-                            NotificationHelper.showNotification(OAndBackup.this, OAndBackup.class, notificationId++, getString(R.string.uninstallFailure), appInfo.getLabel(), true);
-                            Utils.showErrors(OAndBackup.this);
-                        }
-                    });
-                    uninstallThread.start();
-                    threadId = uninstallThread.getId();
-                })
-                .setNegativeButton(R.string.dialogNo, null)
-                .show();
+                        .setTitle(adapter.getItem(info.position).getLabel())
+                        .setMessage(R.string.uninstallDialogMessage)
+                        .setPositiveButton(R.string.dialogYes, (dialog, which) -> {
+                            Thread uninstallThread = new Thread(() -> {
+                                AppInfo appInfo = adapter.getItem(info.position);
+                                Log.i(TAG, "uninstalling " + appInfo.getLabel());
+                                handleMessages.showMessage(appInfo.getLabel(), getString(R.string.uninstallProgress));
+                                int ret = shellCommands.uninstall(appInfo.getPackageName(), appInfo.getSourceDir(), appInfo.getDataDir(), appInfo.isSystem());
+                                refresh();
+                                handleMessages.endMessage();
+                                if (ret == 0) {
+                                    NotificationHelper.showNotification(OAndBackup.this, OAndBackup.class, notificationId++, getString(R.string.uninstallSuccess), appInfo.getLabel(), true);
+                                } else {
+                                    NotificationHelper.showNotification(OAndBackup.this, OAndBackup.class, notificationId++, getString(R.string.uninstallFailure), appInfo.getLabel(), true);
+                                    Utils.showErrors(OAndBackup.this);
+                                }
+                            });
+                            uninstallThread.start();
+                            threadId = uninstallThread.getId();
+                        })
+                        .setNegativeButton(R.string.dialogNo, null)
+                        .show();
                 return true;
             case R.id.deleteBackup:
                 new AlertDialog.Builder(this)
-                .setTitle(adapter.getItem(info.position).getLabel())
-                .setMessage(R.string.deleteBackupDialogMessage)
-                .setPositiveButton(R.string.dialogYes, (dialog, which) -> {
-                    Thread deleteBackupThread = new Thread(() -> {
-                        handleMessages.showMessage(adapter.getItem(info.position).getLabel(), getString(R.string.deleteBackup));
-                        if(backupDir != null)
-                        {
-                            File backupSubDir = new File(backupDir, adapter.getItem(info.position).getPackageName());
-                            ShellCommands.deleteBackup(backupSubDir);
-                            refresh(); // behøver ikke refresh af alle pakkerne, men refresh(packageName) kalder readLogFile(), som ikke kan håndtere, hvis logfilen ikke findes
-                        }
-                        handleMessages.endMessage();
-                    });
-                    deleteBackupThread.start();
-                    threadId = deleteBackupThread.getId();
-                })
-                .setNegativeButton(R.string.dialogNo, null)
-                .show();
+                        .setTitle(adapter.getItem(info.position).getLabel())
+                        .setMessage(R.string.deleteBackupDialogMessage)
+                        .setPositiveButton(R.string.dialogYes, (dialog, which) -> {
+                            Thread deleteBackupThread = new Thread(() -> {
+                                handleMessages.showMessage(adapter.getItem(info.position).getLabel(), getString(R.string.deleteBackup));
+                                if (backupDir != null) {
+                                    File backupSubDir = new File(backupDir, adapter.getItem(info.position).getPackageName());
+                                    ShellCommands.deleteBackup(backupSubDir);
+                                    refresh(); // behøver ikke refresh af alle pakkerne, men refresh(packageName) kalder readLogFile(), som ikke kan håndtere, hvis logfilen ikke findes
+                                }
+                                handleMessages.endMessage();
+                            });
+                            deleteBackupThread.start();
+                            threadId = deleteBackupThread.getId();
+                        })
+                        .setNegativeButton(R.string.dialogNo, null)
+                        .show();
                 return true;
             case R.id.enablePackage:
                 displayDialogEnableDisable(adapter.getItem(info.position).getPackageName(), true);
@@ -552,17 +524,13 @@ implements SharedPreferences.OnSharedPreferenceChangeListener, ActionListener
             case R.id.share:
                 AppInfo appInfo = adapter.getItem(info.position);
                 File apk = new File(backupDir, appInfo.getPackageName() + "/" + appInfo.getLogInfo().getApk());
-                String dataPath = appInfo.getLogInfo().getDataDir();
-                dataPath = dataPath.substring(dataPath.lastIndexOf("/") + 1);
-                File data = new File(backupDir, appInfo.getPackageName() + "/" + dataPath + ".tar.gz");
+                File data = new File(backupDir, appInfo.getPackageName() + "/data.tar.gz");
                 Bundle arguments = new Bundle();
                 arguments.putString("label", appInfo.getLabel());
-                if(apk.exists())
-                {
+                if (apk.exists()) {
                     arguments.putSerializable("apk", apk);
                 }
-                if(data.exists())
-                {
+                if (data.exists()) {
                     arguments.putSerializable("data", data);
                 }
                 ShareDialogFragment shareDialog = new ShareDialogFragment();
@@ -573,66 +541,57 @@ implements SharedPreferences.OnSharedPreferenceChangeListener, ActionListener
                 return super.onContextItemSelected(item);
         }
     }
+
     @Override
-    public void onSharedPreferenceChanged(SharedPreferences preferences, String key)
-    {
-        if(key.equals(Constants.PREFS_PATH_BACKUP_DIRECTORY))
-        {
+    public void onSharedPreferenceChanged(SharedPreferences preferences, String key) {
+        if (key.equals(Constants.PREFS_PATH_BACKUP_DIRECTORY)) {
             String backupDirPath = preferences.getString(key, FileCreationHelper.getDefaultBackupDirPath());
             backupDir = Utils.createBackupDir(OAndBackup.this, backupDirPath);
             refresh();
-        }
-        else if(key.equals(Constants.PREFS_PATH_BUSYBOX))
-        {
+        } else if (key.equals(Constants.PREFS_PATH_BUSYBOX)) {
             shellCommands = new ShellCommands(preferences, getFilesDir());
-        }
-        else if(key.equals(Constants.PREFS_TIMESTAMP))
-        {
+        } else if (key.equals(Constants.PREFS_TIMESTAMP)) {
             adapter.setLocalTimestampFormat(preferences.getBoolean(key, true));
             adapter.notifyDataSetChanged();
-        }
-        else if(key.equals(Constants.PREFS_OLDBACKUPS))
-        {
+        } else if (key.equals(Constants.PREFS_OLDBACKUPS)) {
             sorter = new Sorter(adapter, preferences);
-        }
-        else if(key.equals(Constants.PREFS_LANGUAGES))
-        {
+        } else if (key.equals(Constants.PREFS_LANGUAGES)) {
             languageChanged = true;
-        }
-        else if(key.equals(Constants.PREFS_ENABLESPECIALBACKUPS))
+        } else if (key.equals(Constants.PREFS_ENABLESPECIALBACKUPS))
             refresh();
-        else if(key.equals(Constants.PREFS_ENABLECRYPTO) &&
+        else if (key.equals(Constants.PREFS_ENABLECRYPTO) &&
                 preferences.getBoolean(key, false))
             startCrypto();
     }
-    public boolean onSearchRequested()
-    {
-        if(mSearchItem != null)
-        {
+
+    public boolean onSearchRequested() {
+        if (mSearchItem != null) {
             mSearchItem.expandActionView();
         }
         return true;
     }
-    public void displayDialogEnableDisable(final String packageName, final boolean enable)
-    {
+
+    public void displayDialogEnableDisable(final String packageName, final boolean enable) {
         String title = enable ? getString(R.string.enablePackageTitle) : getString(R.string.disablePackageTitle);
         final ArrayList<String> selectedUsers = new ArrayList<String>();
         final ArrayList<String> userList = shellCommands.getUsers();
         CharSequence[] users = userList.toArray(new CharSequence[0]);
         new AlertDialog.Builder(this)
-            .setTitle(title)
-            .setMultiChoiceItems(users, null, (dialog, chosen, checked) -> {
-                if(checked) {
-                    selectedUsers.add(userList.get(chosen));
-                } else selectedUsers.remove(userList.get(chosen));
-            })
-            .setPositiveButton(R.string.dialogOK, (dialog, which) ->
-                shellCommands.enableDisablePackage(packageName,
-                    selectedUsers, enable)
-            )
-            .setNegativeButton(R.string.dialogCancel, (dialog, which) -> {})
-            .show();
+                .setTitle(title)
+                .setMultiChoiceItems(users, null, (dialog, chosen, checked) -> {
+                    if (checked) {
+                        selectedUsers.add(userList.get(chosen));
+                    } else selectedUsers.remove(userList.get(chosen));
+                })
+                .setPositiveButton(R.string.dialogOK, (dialog, which) ->
+                        shellCommands.enableDisablePackage(packageName,
+                                selectedUsers, enable)
+                )
+                .setNegativeButton(R.string.dialogCancel, (dialog, which) -> {
+                })
+                .show();
     }
+
     /*
     public void checkBusybox()
     {
@@ -645,38 +604,35 @@ implements SharedPreferences.OnSharedPreferenceChangeListener, ActionListener
         }
     }
      */
-    private class InitRunnable implements Runnable
-    {
+    private class InitRunnable implements Runnable {
         boolean checked;
         int firstVisiblePosition;
         ArrayList<String> users;
-        public InitRunnable(boolean checked, int firstVisiblePosition, ArrayList<String> users)
-        {
+
+        public InitRunnable(boolean checked, int firstVisiblePosition, ArrayList<String> users) {
             this.checked = checked;
             this.firstVisiblePosition = firstVisiblePosition;
             this.users = users;
         }
-        public void run()
-        {
+
+        public void run() {
             SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(OAndBackup.this);
             prefs.registerOnSharedPreferenceChangeListener(OAndBackup.this);
             shellCommands = new ShellCommands(prefs, users, getFilesDir());
             String langCode = prefs.getString(Constants.PREFS_LANGUAGES,
-                Constants.PREFS_LANGUAGES_DEFAULT);
+                    Constants.PREFS_LANGUAGES_DEFAULT);
             LanguageHelper.initLanguage(OAndBackup.this, langCode);
             String backupDirPath = prefs.getString(
-                Constants.PREFS_PATH_BACKUP_DIRECTORY,
-                FileCreationHelper.getDefaultBackupDirPath());
+                    Constants.PREFS_PATH_BACKUP_DIRECTORY,
+                    FileCreationHelper.getDefaultBackupDirPath());
             backupDir = Utils.createBackupDir(OAndBackup.this, backupDirPath);
             // temporary method to move logfile from bottom of external storage to bottom of backupdir
             new FileCreationHelper().moveLogfile(prefs.getString("pathLogfile", FileCreationHelper.getDefaultLogFilePath()));
-            if(!checked)
-            {
+            if (!checked) {
                 handleMessages.showMessage("", getString(R.string.suCheck));
                 boolean haveSu = ShellCommands.checkSuperUser();
                 LanguageHelper.legacyKeepLanguage(OAndBackup.this, langCode);
-                if(!haveSu)
-                {
+                if (!haveSu) {
                     Utils.showWarning(OAndBackup.this, "", getString(R.string.noSu));
                 }
                 //checkBusybox();
@@ -685,12 +641,11 @@ implements SharedPreferences.OnSharedPreferenceChangeListener, ActionListener
                 handleMessages.endMessage();
             }
 
-            if(appInfoList == null)
-            {
+            if (appInfoList == null) {
                 handleMessages.changeMessage("", getString(R.string.collectingData));
                 appInfoList = AppInfoHelper.getPackageInfo(OAndBackup.this,
-                    backupDir, true, prefs.getBoolean(Constants.
-                    PREFS_ENABLESPECIALBACKUPS, true));
+                        backupDir, true, prefs.getBoolean(Constants.
+                                PREFS_ENABLESPECIALBACKUPS, true));
                 LanguageHelper.legacyKeepLanguage(OAndBackup.this, langCode);
                 handleMessages.endMessage();
             }
@@ -700,10 +655,9 @@ implements SharedPreferences.OnSharedPreferenceChangeListener, ActionListener
 
             adapter = new AppInfoAdapter(OAndBackup.this, R.layout.listlayout, appInfoList);
             adapter.setLocalTimestampFormat(prefs.getBoolean(
-                Constants.PREFS_TIMESTAMP, true));
+                    Constants.PREFS_TIMESTAMP, true));
             sorter = new Sorter(adapter, prefs);
-            if(prefs.getBoolean("rememberFiltering", false))
-            {
+            if (prefs.getBoolean("rememberFiltering", false)) {
                 sorter.sort(Sorter.convertFilteringId(prefs.getInt("filteringId", 0)));
                 sorter.sort(Sorter.convertSortingId(prefs.getInt("sortingId", 1)));
             }
@@ -731,14 +685,15 @@ implements SharedPreferences.OnSharedPreferenceChangeListener, ActionListener
             }
             return contexts[0];
         }
+
         @Override
         public void onPostExecute(Context context) {
-            if(throwable != null) {
+            if (throwable != null) {
                 Log.e(TAG, String.format(
-                    "error during AssetHandlerTask.onPostExecute: %s",
+                        "error during AssetHandlerTask.onPostExecute: %s",
                         throwable));
                 Toast.makeText(context, throwable.toString(),
-                    Toast.LENGTH_LONG).show();
+                        Toast.LENGTH_LONG).show();
             }
         }
     }

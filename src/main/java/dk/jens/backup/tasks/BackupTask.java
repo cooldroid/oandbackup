@@ -41,8 +41,7 @@ public class BackupTask extends ActionTask {
             if(crypto.isErrorSet())
             {
                 Crypto.cleanUpEncryptedFiles(new File(backupDirectory,
-                    appInfo.getPackageName()), appInfo.getSourceDir(),
-                    appInfo.getDataDir(), mode,
+                    appInfo.getPackageName()), mode,
                     prefs.getBoolean(Constants.PREFS_BACKUP_EXTERNAL_FILES, false),
                     prefs.getBoolean("backupExpansionFiles", false));
                 result++;

@@ -1,5 +1,6 @@
 package dk.jens.backup.schedules;
 
+import android.annotation.SuppressLint;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.database.sqlite.SQLiteDatabase;
@@ -141,6 +142,7 @@ public class HandleScheduledBackups
                         crypto = new Crypto(userIds, provider);
                         crypto.bind(context);
                 }
+                @SuppressLint("InvalidWakeLockTag")
                 PowerManager.WakeLock wl = powerManager.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, TAG);
                 if(prefs.getBoolean("acquireWakelock", true))
                 {
@@ -175,7 +177,7 @@ public class HandleScheduledBackups
                         crypto.encryptFromAppInfo(context, backupDir, appInfo, subMode, prefs);
                         if(crypto.isErrorSet())
                         {
-                            Crypto.cleanUpEncryptedFiles(new File(backupDir, appInfo.getPackageName()), appInfo.getSourceDir(), appInfo.getDataDir(), subMode, prefs.getBoolean(Constants.PREFS_BACKUP_EXTERNAL_FILES, false), prefs.getBoolean("backupExpansionFiles", false));
+                            Crypto.cleanUpEncryptedFiles(new File(backupDir, appInfo.getPackageName()), subMode, prefs.getBoolean(Constants.PREFS_BACKUP_EXTERNAL_FILES, false), prefs.getBoolean("backupExpansionFiles", false));
                             errorFlag = true;
                         }
                     }
