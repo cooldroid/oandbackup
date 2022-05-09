@@ -808,7 +808,8 @@ fun MainPackageItem(
         headlineContent = {
             Row(modifier = Modifier.fillMaxWidth()) {
                 Text(
-                    text = pkg.packageLabel,
+                    text = if (pkg.packageInfo.splitSourceDirs.isEmpty())
+                            pkg.packageLabel else pkg.packageLabel + " **",
                     modifier = Modifier
                         .align(Alignment.CenterVertically)
                         .weight(1f),
