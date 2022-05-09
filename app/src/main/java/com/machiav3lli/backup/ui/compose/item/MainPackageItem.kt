@@ -79,7 +79,8 @@ fun MainPackageItem(
                         .fillMaxHeight(0.4f),
                 ) {
                     Text(
-                        text = packageItem.packageLabel,
+                        text = if (packageItem.packageInfo.splitSourceDirs.isEmpty())
+                            packageItem.packageLabel else packageItem.packageLabel + " **",
                         modifier = Modifier
                             .align(Alignment.CenterVertically)
                             .weight(1f),
