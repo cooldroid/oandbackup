@@ -875,7 +875,7 @@ open class RestoreAppAction(context: Context, work: AppActionWork?, shell: Shell
 
             // calculate a list what must be updated inside the directory
             val chownTargets = dataContents.map { s -> RootFile(targetPath, s).absolutePath }
-            val cacheTargets = DATA_EXCLUDED_CACHE_DIRS.map { s -> RootFile(targetPath, s).absolutePath }
+            val cacheTargets = emptyList<String>() //DATA_EXCLUDED_CACHE_DIRS.map { s -> RootFile(targetPath, s).absolutePath }
             Timber.d("Changing owner and group of '$targetPath' to $uid:$gid and selinux context to $con")
             var command =
                 "$utilBoxQ chown $uid:$gid ${

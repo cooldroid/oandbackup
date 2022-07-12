@@ -139,7 +139,7 @@ abstract class BaseAppAction protected constructor(
         )
         val DATA_EXCLUDED_BASENAMES = listOf(
             "lib",      //TODO hg42 what about architecture dependent names? or may be application specific? lib* ???
-            "app_webview*", "app_textures", "app_sslcache", "app_google_tagmanager", "code_cache", "files/.Fabric", "files/socket_pipe", "oat", "lib-*",
+            "app_webview*", "app_textures", "app_sslcache", "app_google_tagmanager", "files/.Fabric", "files/socket_pipe", "oat", "lib-*",
             "no_backup" //TODO hg42 use Context.getNoBackupFilesDir() ??? tricky, because it's an absolute path (remove common part...)
         )
         val DATA_EXCLUDED_NAMES = listOfNotNull(
