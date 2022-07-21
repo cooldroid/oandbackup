@@ -272,7 +272,8 @@ class AppActionWork(val context: Context, workerParams: WorkerParameters) :
             mode: Int,
             backupBoolean: Boolean,
             notificationId: Int,
-            batchName: String
+            batchName: String,
+            expedited: Boolean
         ): OneTimeWorkRequest {
             val builder = OneTimeWorkRequest.Builder(AppActionWork::class.java)
 
@@ -290,7 +291,7 @@ class AppActionWork(val context: Context, workerParams: WorkerParameters) :
                     )
                 )
 
-            if (OABX.prefFlag(PREFS_USEEXPEDITED, true))
+            if (expedited)
                 builder.setExpedited(OutOfQuotaPolicy.RUN_AS_NON_EXPEDITED_WORK_REQUEST)
 
             return builder.build()

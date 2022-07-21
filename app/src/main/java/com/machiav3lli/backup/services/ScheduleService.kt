@@ -172,7 +172,8 @@ open class ScheduleService : Service() {
                                     mode,
                                     true,
                                     notificationId,
-                                    batchName
+                                    batchName,
+                                    false
                                 )
                             worksList.add(oneTimeWorkRequest)
 
