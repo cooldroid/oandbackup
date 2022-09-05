@@ -650,6 +650,26 @@ open class RestoreAppAction(context: Context, work: AppActionWork?, shell: Shell
         }
     }
 
+    fun getOwnerGroupContextWithWorkaround( // TODO hg42 this is the best I could come up with for now
+            app: Package,
+            extractTo: String
+    ): Array<String> {
+        val uidgidcon = try {
+            shell.suGetOwnerGroupContext(extractTo)
+        } catch(e: Throwable) {
+            val fromParent = shell.suGetOwnerGroupContext(File(extractTo).parent!!)
+            val fromData = shell.suGetOwnerGroupContext(app.dataPath)
+            arrayOf(
+                fromData[0],    // user from app data
+                fromParent[1],  // group is independent of app
+                fromParent[2]   // context is independent of app //TODO hg42 really? some seem to be restricted to app? or may be they should...
+                                // note: restorecon does not work, because it sets storage_file instead of media_rw_data_file
+                                // (returning "?" here would choose restorecon)
+            )
+        }
+        return uidgidcon
+    }
+
     @Throws(RestoreFailedException::class)
     private fun genericRestorePermissions(
         dataType: String,
@@ -828,6 +848,7 @@ open class RestoreAppAction(context: Context, work: AppActionWork?, shell: Shell
                 "path '$extractTo' does not contain ${app.packageName}"
             )
 
+        val uidgidcon = getOwnerGroupContextWithWorkaround(app, extractTo)
         genericRestoreFromArchive(
             dataType,
             backupArchive,
@@ -837,6 +858,11 @@ open class RestoreAppAction(context: Context, work: AppActionWork?, shell: Shell
             backup.iv,
             context.externalCacheDir?.let { RootFile(it) },
             isOldVersion(backup)
+        )
+        genericRestorePermissions(
+            dataType,
+            extractTo,
+            uidgidcon
         )
     }
 
@@ -877,6 +903,8 @@ open class RestoreAppAction(context: Context, work: AppActionWork?, shell: Shell
                         backupFilename
                     )
                 )
+
+            val uidgidcon = getOwnerGroupContextWithWorkaround(app, extractTo)
             genericRestoreFromArchive(
                 dataType,
                 backupArchive,
@@ -886,7 +914,11 @@ open class RestoreAppAction(context: Context, work: AppActionWork?, shell: Shell
                 backup.iv,
                 context.externalCacheDir?.let { RootFile(it) },
             )
-
+            genericRestorePermissions(
+                dataType,
+                extractTo,
+                uidgidcon
+            )
         }
     }
 
@@ -927,6 +959,8 @@ open class RestoreAppAction(context: Context, work: AppActionWork?, shell: Shell
                         backupFilename
                     )
                 )
+
+            val uidgidcon = getOwnerGroupContextWithWorkaround(app, extractTo)
             genericRestoreFromArchive(
                 dataType,
                 backupArchive,
@@ -936,7 +970,11 @@ open class RestoreAppAction(context: Context, work: AppActionWork?, shell: Shell
                 backup.iv,
                 context.externalCacheDir?.let { RootFile(it) }
             )
-
+            genericRestorePermissions(
+                dataType,
+                extractTo,
+                uidgidcon
+            )
         }
     }
 
