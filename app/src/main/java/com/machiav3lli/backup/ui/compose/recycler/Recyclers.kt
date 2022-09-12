@@ -4,6 +4,8 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.mutableStateMapOf
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.machiav3lli.backup.dbs.entity.Backup
@@ -22,11 +24,15 @@ import com.machiav3lli.backup.ui.compose.item.UpdatedPackageItem
 @Composable
 fun HomePackageRecycler(
     modifier: Modifier = Modifier,
-    productsList: List<Package>?,
+    productsList: List<Package>,
     onClick: (Package) -> Unit = {}
 ) {
+    val selection = remember { mutableStateMapOf<Package, Boolean>() }
+    productsList.forEach {
+        selection.putIfAbsent(it, false)
+    }
     VerticalItemList(modifier = modifier, list = productsList) {
-        MainPackageItem(it, onClick)
+        MainPackageItem(it, productsList, selection, onClick)
     }
 }
 

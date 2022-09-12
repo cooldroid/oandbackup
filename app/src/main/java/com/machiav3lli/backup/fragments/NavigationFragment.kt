@@ -35,7 +35,7 @@ import com.machiav3lli.backup.tasks.FinishWork
 
 fun startBatchAction(
     backupBoolean: Boolean,
-    selectedPackages: List<String?>,
+    selectedPackages: List<String>,
     selectedModes: List<Int>,
     onSuccessfulFinish: Observer<WorkInfo>.(LiveData<WorkInfo>) -> Unit
 ) {
@@ -46,8 +46,10 @@ fun startBatchAction(
 
     val selectedItems = selectedPackages
         .mapIndexed { i, packageName ->
-            if (packageName.isNullOrEmpty()) null
-            else Pair(packageName, selectedModes[i])
+            if (packageName.isEmpty())
+                null
+            else
+                Pair(packageName, selectedModes[i])
         }
         .filterNotNull()
 

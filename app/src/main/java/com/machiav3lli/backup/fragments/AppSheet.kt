@@ -88,7 +88,6 @@ import com.machiav3lli.backup.handler.BackupRestoreHelper.ActionType
 import com.machiav3lli.backup.handler.ShellCommands
 import com.machiav3lli.backup.handler.ShellHandler
 import com.machiav3lli.backup.items.Package
-import com.machiav3lli.backup.tasks.AppActionWork
 import com.machiav3lli.backup.tasks.BackupActionTask
 import com.machiav3lli.backup.tasks.RestoreActionTask
 import com.machiav3lli.backup.ui.compose.item.BackupItem
@@ -729,7 +728,7 @@ class AppSheet(val appInfo: Package) : BaseSheet(), ActionListener {
             .show()
     }
 
-    private fun showBackupDialog(app: Package) {
+    fun showBackupDialog(app: Package) {
         BackupDialogFragment(app, this)
             .show(requireActivity().supportFragmentManager, "backupDialog")
     }

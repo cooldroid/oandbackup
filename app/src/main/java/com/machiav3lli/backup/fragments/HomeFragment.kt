@@ -296,8 +296,8 @@ class HomeFragment : NavigationFragment(),
                         modifier = Modifier
                             .weight(1f)
                             .fillMaxWidth(),
-                        productsList = queriedList,
-                        onClick = ::onClickOpenAppSheet
+                        productsList = queriedList ?: listOf(),
+                        onClick = ::onClickOpenAppSheet,
                     )
                     AnimatedVisibility(visible = !updatedApps.isNullOrEmpty()) {
                         Column(
