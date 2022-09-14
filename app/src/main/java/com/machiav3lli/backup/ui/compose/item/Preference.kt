@@ -34,20 +34,25 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.machiav3lli.backup.OABX
 import com.machiav3lli.backup.ui.compose.ifThen
+import com.machiav3lli.backup.ui.item.BooleanPref
+import com.machiav3lli.backup.ui.item.EnumPref
+import com.machiav3lli.backup.ui.item.IntPref
+import com.machiav3lli.backup.ui.item.ListPref
 import com.machiav3lli.backup.ui.item.Pref
 import kotlin.math.roundToInt
 
 @Composable
 fun BasePreference(
     modifier: Modifier = Modifier,
-    @StringRes titleId: Int,
-    @StringRes summaryId: Int = -1,
+    key: String,
     summary: String? = null,
+    @StringRes titleId: Int = -1,
+    @StringRes summaryId: Int = -1,
     isEnabled: Boolean = true,
     icon: (@Composable () -> Unit)? = null,
     endWidget: (@Composable () -> Unit)? = null,
     bottomWidget: (@Composable () -> Unit)? = null,
-    onClick: (() -> Unit)? = null,
+    onClick: (() -> Unit)? = null
 ) {
     Column(
         modifier = Modifier
@@ -75,18 +80,20 @@ fun BasePreference(
                     }
             ) {
                 Text(
-                    text = stringResource(id = titleId),
+                    text = if (titleId != -1) stringResource(id = titleId) else key,
                     color = MaterialTheme.colorScheme.onSurface,
                     style = MaterialTheme.typography.titleMedium,
                     fontSize = 16.sp
                 )
-                if (summaryId != -1 || summary != null) {
-                    Text(
-                        text = summary ?: stringResource(id = summaryId),
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        style = MaterialTheme.typography.bodyMedium,
-                    )
-                }
+                var summaryText= if (summaryId != -1) stringResource(id = summaryId) else ""
+                if (summaryText.isNotEmpty() && ! summary.isNullOrEmpty())
+                    summaryText += " : "
+                summaryText += summary ?: ""
+                Text(
+                    text = summaryText,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    style = MaterialTheme.typography.bodyMedium,
+                )
                 bottomWidget?.let {
                     Spacer(modifier = Modifier.requiredWidth(8.dp))
                     bottomWidget()
@@ -151,15 +158,16 @@ fun PreferencesGroupHeader(
 fun LaunchPreference(
     modifier: Modifier = Modifier,
     pref: Pref,
-    isEnabled: Boolean = true,
     summary: String? = null,
+    isEnabled: Boolean = true,
     onClick: (() -> Unit) = {},
 ) {
     BasePreference(
         modifier = modifier,
+        key = pref.key,
+        summary = summary,
         titleId = pref.titleId,
         summaryId = pref.summaryId,
-        summary = summary,
         icon = {
             if (pref.iconId != -1) PrefIcon(
                 iconId = pref.iconId,
@@ -176,12 +184,13 @@ fun LaunchPreference(
 @Composable
 fun EnumPreference(
     modifier: Modifier = Modifier,
-    pref: Pref.EnumPref,
+    pref: EnumPref,
     isEnabled: Boolean = true,
     onClick: (() -> Unit) = {},
 ) {
     BasePreference(
         modifier = modifier,
+        key = pref.key,
         titleId = pref.titleId,
         summaryId = pref.entries[OABX.prefInt(pref.key, pref.defaultValue)] ?: pref.summaryId,
         icon = {
@@ -200,12 +209,13 @@ fun EnumPreference(
 @Composable
 fun ListPreference(
     modifier: Modifier = Modifier,
-    pref: Pref.ListPref,
+    pref: ListPref,
     isEnabled: Boolean = true,
     onClick: (() -> Unit) = {},
 ) {
     BasePreference(
         modifier = modifier,
+        key = pref.key,
         titleId = pref.titleId,
         summaryId = pref.summaryId,
         summary = pref.entries[OABX.prefString(pref.key, pref.defaultValue)],
@@ -225,7 +235,7 @@ fun ListPreference(
 @Composable
 fun SwitchPreference(
     modifier: Modifier = Modifier,
-    pref: Pref.BooleanPref,
+    pref: BooleanPref,
     isEnabled: Boolean = true,
     onCheckedChange: ((Boolean) -> Unit) = {},
 ) {
@@ -239,6 +249,8 @@ fun SwitchPreference(
 
     BasePreference(
         modifier = modifier,
+        key = pref.key,
+        summary = pref.summary,
         titleId = pref.titleId,
         summaryId = pref.summaryId,
         icon = {
@@ -272,7 +284,7 @@ fun SwitchPreference(
 @Composable
 fun CheckboxPreference(
     modifier: Modifier = Modifier,
-    pref: Pref.BooleanPref,
+    pref: BooleanPref,
     isEnabled: Boolean = true,
     onCheckedChange: ((Boolean) -> Unit) = {},
 ) {
@@ -286,6 +298,8 @@ fun CheckboxPreference(
 
     BasePreference(
         modifier = modifier,
+        key = pref.key,
+        summary = pref.summary,
         titleId = pref.titleId,
         summaryId = pref.summaryId,
         icon = {
@@ -319,7 +333,7 @@ fun CheckboxPreference(
 @Composable
 fun SeekBarPreference(
     modifier: Modifier = Modifier,
-    pref: Pref.IntPref,
+    pref: IntPref,
     isEnabled: Boolean = true,
     onValueChange: ((Int) -> Unit) = {},
 ) {
@@ -348,6 +362,8 @@ fun SeekBarPreference(
 
     BasePreference(
         modifier = modifier,
+        key = pref.key,
+        summary = pref.summary,
         titleId = pref.titleId,
         summaryId = pref.summaryId,
         icon = {

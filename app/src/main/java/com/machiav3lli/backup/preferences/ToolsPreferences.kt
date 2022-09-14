@@ -39,6 +39,7 @@ import com.machiav3lli.backup.ui.compose.theme.AppTheme
 import com.machiav3lli.backup.ui.compose.theme.ColorDeData
 import com.machiav3lli.backup.ui.compose.theme.ColorExodus
 import com.machiav3lli.backup.ui.compose.theme.ColorExtDATA
+import com.machiav3lli.backup.ui.item.LinkPref
 import com.machiav3lli.backup.ui.item.Pref
 import com.machiav3lli.backup.utils.FileUtils.invalidateBackupLocation
 import com.machiav3lli.backup.utils.applyFilter
@@ -61,13 +62,8 @@ fun ToolsPrefsPage(navController: NavHostController) {
     val context = LocalContext.current
     val snackbarHostState = remember { SnackbarHostState() }
     val coroutineScope = rememberCoroutineScope()
-    val prefs = listOf(
-        CleanupBackupFolderPref,
-        CopySelfPref,
-        ExportImportSchedulesPref,
-        SaveAppsListPref,
-        LogViewerPref
-    )
+
+    val prefs = Pref.preferences["tool"] ?: listOf()
 
     AppTheme(
         darkTheme = isSystemInDarkTheme()
@@ -78,7 +74,7 @@ fun ToolsPrefsPage(navController: NavHostController) {
         ) {
             LazyColumn(
                 modifier = Modifier.fillMaxSize(),
-                contentPadding = PaddingValues(8.dp),
+                contentPadding = it, //PaddingValues(8.dp),
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 items(items = prefs) { pref ->
@@ -107,8 +103,8 @@ fun ToolsPrefsPage(navController: NavHostController) {
     }
 }
 
-val CleanupBackupFolderPref = Pref.LinkPref(
-    key = PREFS_BATCH_DELETE,
+val CleanupBackupFolderPref = LinkPref(
+    key = "tool." + PREFS_BATCH_DELETE,
     titleId = R.string.prefs_batchdelete,
     summaryId = R.string.prefs_batchdelete_summary,
     iconId = R.drawable.ic_delete,
@@ -180,8 +176,8 @@ private fun Context.deleteBackups(deleteList: List<Package>) {
     )
 }
 
-val CopySelfPref = Pref.LinkPref(
-    key = PREFS_COPYSELF,
+val CopySelfPref = LinkPref(
+    key = "tool." + PREFS_COPYSELF,
     titleId = R.string.prefs_copyselfapk,
     summaryId = R.string.prefs_copyselfapk_summary,
     iconId = R.drawable.ic_andy,
@@ -233,16 +229,16 @@ private fun Context.onClickCopySelf(
     }
 }
 
-val ExportImportSchedulesPref = Pref.LinkPref(
-    key = PREFS_SCHEDULESEXPORTIMPORT,
+val ExportImportSchedulesPref = LinkPref(
+    key = "tool." + PREFS_SCHEDULESEXPORTIMPORT,
     titleId = R.string.prefs_schedulesexportimport,
     summaryId = R.string.prefs_schedulesexportimport_summary,
     iconId = R.drawable.ic_scheduler,
     iconTint = ColorExtDATA
 )
 
-val SaveAppsListPref = Pref.LinkPref(
-    key = PREFS_SAVEAPPSLIST,
+val SaveAppsListPref = LinkPref(
+    key = "tool." + PREFS_SAVEAPPSLIST,
     titleId = R.string.prefs_saveappslist,
     summaryId = R.string.prefs_saveappslist_summary,
     iconId = R.drawable.ic_list_ordered,
@@ -302,8 +298,8 @@ fun Context.writeAppsListFile(appsList: List<String>, filteredBoolean: Boolean) 
 }
 
 
-val LogViewerPref = Pref.LinkPref(
-    key = PREFS_LOGVIEWER,
+val LogViewerPref = LinkPref(
+    key = "tool." + PREFS_LOGVIEWER,
     titleId = R.string.prefs_logviewer,
     iconId = R.drawable.ic_log,
     iconTint = ColorDeData

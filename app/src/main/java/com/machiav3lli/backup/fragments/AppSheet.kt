@@ -88,6 +88,7 @@ import com.machiav3lli.backup.handler.BackupRestoreHelper.ActionType
 import com.machiav3lli.backup.handler.ShellCommands
 import com.machiav3lli.backup.handler.ShellHandler
 import com.machiav3lli.backup.items.Package
+import com.machiav3lli.backup.preferences.pref_useWorkManagerForSingleManualJob
 import com.machiav3lli.backup.tasks.BackupActionTask
 import com.machiav3lli.backup.tasks.RestoreActionTask
 import com.machiav3lli.backup.ui.compose.item.BackupItem
@@ -629,7 +630,7 @@ class AppSheet(val appInfo: Package) : BaseSheet(), ActionListener {
         viewModel.thePackage.value?.let { p ->
             when {
                 actionType === ActionType.BACKUP -> {
-                    if(OABX.prefFlag("useWorkManagerForSingleBackup", false)) {
+                    if(pref_useWorkManagerForSingleManualJob.value) {
                         startBatchAction(
                             true,
                             listOf(this.appInfo.packageName),
@@ -647,7 +648,7 @@ class AppSheet(val appInfo: Package) : BaseSheet(), ActionListener {
                     }
                 }
                 actionType === ActionType.RESTORE -> {
-                    if(OABX.prefFlag("useWorkManagerForSingleRestore", false)) {
+                    if(pref_useWorkManagerForSingleManualJob.value) {
                         startBatchAction(
                             false,
                             listOf(this.appInfo.packageName),

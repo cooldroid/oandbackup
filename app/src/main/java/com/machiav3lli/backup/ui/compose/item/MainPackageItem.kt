@@ -28,7 +28,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.snapshots.SnapshotStateMap
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.machiav3lli.backup.MODE_ALL
@@ -37,6 +36,7 @@ import com.machiav3lli.backup.R
 import com.machiav3lli.backup.fragments.startBatchAction
 import com.machiav3lli.backup.handler.BackupRestoreHelper
 import com.machiav3lli.backup.items.Package
+import com.machiav3lli.backup.preferences.pref_tapToSelect
 import com.machiav3lli.backup.ui.compose.theme.LocalShapes
 import com.machiav3lli.backup.utils.getFormattedDate
 import timber.log.Timber
@@ -185,28 +185,57 @@ fun MainPackageItem(
         elevation = CardDefaults.cardElevation(4.dp),
     ) {
         MainPackageContextMenu(expanded = menuExpanded, packageItem = item, productsList = productsList, selection = selection, onAction = onAction)
-        Row(
-            modifier = Modifier
-                .combinedClickable(
-                    onClick = {
-                        selection[packageItem] = ! (selection[packageItem] == true)
-                    },
-                    onLongClick = {
-                        if(selectedAndVisible.count() == 0) {
-                            onAction(packageItem)
-                        } else {
-                            if (selection[packageItem] == true)
-                                menuExpanded.value = true
-                            else {
-                                //selection[packageItem] = true
-                                // select from - to ? but the map is not sorted
-                                //selection.entries.forEach {
-                                //
-                                //}
+        val modifier =
+            if(pref_tapToSelect.value)
+                Modifier
+                    .combinedClickable(
+                        onClick = {
+                            selection[packageItem] = ! (selection[packageItem] == true)
+                        },
+                        onLongClick = {
+                            if(selectedAndVisible.count() == 0) {
+                                onAction(packageItem)
+                            } else {
+                                if (selection[packageItem] == true)
+                                    menuExpanded.value = true
+                                else {
+                                    //selection[packageItem] = true
+                                    // select from - to ? but the map is not sorted
+                                    //selection.entries.forEach {
+                                    //
+                                    //}
+                                }
                             }
                         }
-                    }
-                )
+                    )
+            else
+                Modifier
+                    .combinedClickable(
+                        onClick = {
+                            if(selectedAndVisible.count() == 0) {
+                                onAction(packageItem)
+                            } else {
+                                selection[packageItem] = ! (selection[packageItem] == true)
+                            }
+                        },
+                        onLongClick = {
+                            if(selectedAndVisible.count() == 0) {
+                                selection[packageItem] = ! (selection[packageItem] == true)
+                            } else {
+                                if (selection[packageItem] == true)
+                                    menuExpanded.value = true
+                                else {
+                                    //selection[packageItem] = true
+                                    // select from - to ? but the map is not sorted
+                                    //selection.entries.forEach {
+                                    //
+                                    //}
+                                }
+                            }
+                        }
+                    )
+        Row(
+            modifier = modifier
                 .background(color = if (selection[packageItem] == true) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.background)
                 .fillMaxWidth()
                 .padding(8.dp),

@@ -1,7 +1,6 @@
 package com.machiav3lli.backup.preferences
 
 import android.app.Activity
-import android.content.Context
 import android.content.Intent
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -20,6 +19,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import com.machiav3lli.backup.BACKUP_DIRECTORY_INTENT
+import com.machiav3lli.backup.OABX
 import com.machiav3lli.backup.PREFS_ACCENT_COLOR_X
 import com.machiav3lli.backup.PREFS_BIOMETRICLOCK
 import com.machiav3lli.backup.PREFS_DEVICELOCK
@@ -49,7 +49,12 @@ import com.machiav3lli.backup.ui.compose.theme.ColorExtDATA
 import com.machiav3lli.backup.ui.compose.theme.ColorOBB
 import com.machiav3lli.backup.ui.compose.theme.ColorSpecial
 import com.machiav3lli.backup.ui.compose.theme.ColorUpdated
+import com.machiav3lli.backup.ui.item.BooleanPref
+import com.machiav3lli.backup.ui.item.EnumPref
+import com.machiav3lli.backup.ui.item.IntPref
+import com.machiav3lli.backup.ui.item.ListPref
 import com.machiav3lli.backup.ui.item.Pref
+import com.machiav3lli.backup.ui.item.StringPref
 import com.machiav3lli.backup.utils.StorageLocationNotConfiguredException
 import com.machiav3lli.backup.utils.backupDirConfigured
 import com.machiav3lli.backup.utils.getLanguageList
@@ -68,18 +73,9 @@ fun UserPrefsPage() {
     var dialogsPref by remember { mutableStateOf<Pref?>(null) }
     var backupDir by remember { mutableStateOf(context.backupDirConfigured) }
     var isDeviceLockEnabled by remember { mutableStateOf(context.isDeviceLockEnabled()) }
-    val prefs = listOf(
-        context.LanguagePref,
-        ThemePref,
-        AccentColorPref,
-        SecondaryColorPref,
-        BackupFolderPref,
-        LoadingToastsPref,
-        DeviceLockPref,
-        BiometricLockPref,
-        DaysOldPref,
-        RememberFilterPref
-    )
+
+    val prefs = Pref.preferences["user"] ?: listOf()
+
     val launcher =
         rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
             if (result.data != null && result.resultCode == Activity.RESULT_OK) {
@@ -91,8 +87,10 @@ fun UserPrefsPage() {
                         "" // Can be ignored, this is about to set the path
                     }
                     if (oldDir != uri.toString()) {
-                        val flags = it.flags and (Intent.FLAG_GRANT_READ_URI_PERMISSION
-                                or Intent.FLAG_GRANT_WRITE_URI_PERMISSION)
+                        val flags = it.flags and (
+                                            Intent.FLAG_GRANT_READ_URI_PERMISSION or
+                                            Intent.FLAG_GRANT_WRITE_URI_PERMISSION
+                        )
                         context.contentResolver.takePersistableUriPermission(uri, flags)
                         Timber.i("setting uri $uri")
                         backupDir = context.setBackupDir(uri)
@@ -111,29 +109,29 @@ fun UserPrefsPage() {
         ) {
             items(items = prefs) { pref ->
                 when (pref) {
-                    DeviceLockPref -> SwitchPreference(
-                        pref = pref as Pref.BooleanPref,
+                    DeviceLockPref -> SwitchPreference(pref = pref as BooleanPref,
                         isEnabled = context.isDeviceLockAvailable()
                     ) {
                         isDeviceLockEnabled = it
                     }
-                    BiometricLockPref -> SwitchPreference(
-                        pref = pref as Pref.BooleanPref,
+                    BiometricLockPref -> SwitchPreference(pref = pref as BooleanPref,
                         isEnabled = context.isBiometricLockAvailable() && isDeviceLockEnabled
                     )
-                    is Pref.ListPref -> ListPreference(pref = pref) {
+                    is ListPref -> ListPreference(pref = pref) {
                         dialogsPref = pref
                         openDialog.value = true
                     }
-                    ThemePref, AccentColorPref, SecondaryColorPref -> EnumPreference(pref = pref as Pref.EnumPref) {
+                    is EnumPref -> EnumPreference(pref = pref) {
                         dialogsPref = pref
                         openDialog.value = true
                     }
-                    BackupFolderPref -> LaunchPreference(pref = pref, summary = backupDir) {
+                    BackupFolderPref -> LaunchPreference(pref = pref,
+                        summary = backupDir
+                    ) {
                         launcher.launch(BACKUP_DIRECTORY_INTENT)
                     }
-                    is Pref.BooleanPref -> SwitchPreference(pref = pref)
-                    is Pref.IntPref -> SeekBarPreference(pref = pref)
+                    is BooleanPref -> SwitchPreference(pref = pref)
+                    is IntPref     -> SeekBarPreference(pref = pref)
                 }
             }
         }
@@ -141,13 +139,15 @@ fun UserPrefsPage() {
         if (openDialog.value) {
             BaseDialog(openDialogCustom = openDialog) {
                 when (dialogsPref) {
-                    is Pref.ListPref -> ListDialogUI(
-                        pref = dialogsPref as Pref.ListPref,
+                    LanguagePref -> ListDialogUI(
+                        pref = dialogsPref as ListPref,
                         openDialogCustom = openDialog,
                         onChanged = { context.restartApp() }
                     )
-                    ThemePref, AccentColorPref, SecondaryColorPref -> EnumDialogUI(
-                        pref = dialogsPref as Pref.EnumPref,
+                    ThemePref,
+                    AccentColorPref,
+                    SecondaryColorPref -> EnumDialogUI(
+                        pref = dialogsPref as EnumPref,
                         openDialogCustom = openDialog,
                         onChanged = {
                             context.setCustomTheme()
@@ -160,18 +160,27 @@ fun UserPrefsPage() {
     }
 }
 
-val Context.LanguagePref: Pref.ListPref
-    get() = Pref.ListPref(
-        key = PREFS_LANGUAGES,
-        titleId = R.string.prefs_languages,
-        iconId = R.drawable.ic_languages,
-        iconTint = ColorOBB,
-        entries = getLanguageList(),
-        defaultValue = "system"
+// val Context.LanguagePref: ListPref
+//     get() = ListPref(
+//         key = "user." + PREFS_LANGUAGES,
+//         titleId = R.string.prefs_languages,
+//         iconId = R.drawable.ic_languages,
+//         iconTint = ColorOBB,
+//         entries = getLanguageList(),
+//         defaultValue = "system"
+//     )
+
+val LanguagePref = ListPref(
+    key = "user." + PREFS_LANGUAGES,
+    titleId = R.string.prefs_languages,
+    iconId = R.drawable.ic_languages,
+    iconTint = ColorOBB,
+    entries = OABX.context.getLanguageList(),
+    defaultValue = "system"
     )
 
-val ThemePref = Pref.EnumPref(
-    key = PREFS_THEME_X,
+val ThemePref = EnumPref(
+    key = "user." + PREFS_THEME_X,
     titleId = R.string.prefs_theme,
     iconId = R.drawable.ic_theme,
     iconTint = ColorSpecial,
@@ -179,8 +188,8 @@ val ThemePref = Pref.EnumPref(
     defaultValue = 2
 )
 
-val AccentColorPref = Pref.EnumPref(
-    key = PREFS_ACCENT_COLOR_X,
+val AccentColorPref = EnumPref(
+    key = "user." + PREFS_ACCENT_COLOR_X,
     titleId = R.string.prefs_accent_color,
     iconId = R.drawable.ic_color_accent,
     //iconTint = MaterialTheme.colorScheme.primary,
@@ -188,8 +197,8 @@ val AccentColorPref = Pref.EnumPref(
     defaultValue = 0
 )
 
-val SecondaryColorPref = Pref.EnumPref(
-    key = PREFS_SECONDARY_COLOR_X,
+val SecondaryColorPref = EnumPref(
+    key = "user." + PREFS_SECONDARY_COLOR_X,
     titleId = R.string.prefs_secondary_color,
     iconId = R.drawable.ic_color_secondary,
     //iconTint = MaterialTheme.colorScheme.secondary,
@@ -197,24 +206,24 @@ val SecondaryColorPref = Pref.EnumPref(
     defaultValue = 0
 )
 
-val BackupFolderPref = Pref.StringPref(
-    key = PREFS_PATH_BACKUP_DIRECTORY,
+val BackupFolderPref = StringPref(
+    key = "user." + PREFS_PATH_BACKUP_DIRECTORY,
     titleId = R.string.prefs_pathbackupfolder,
     iconId = R.drawable.ic_folder,
     iconTint = ColorExtDATA,
     defaultValue = ""
 )
 
-val LoadingToastsPref = Pref.BooleanPref(
-    key = PREFS_LOADINGTOASTS,
+val LoadingToastsPref = BooleanPref(
+    key = "user." + PREFS_LOADINGTOASTS,
     titleId = R.string.prefs_loadingtoasts,
     summaryId = R.string.prefs_loadingtoasts_summary,
     iconId = R.drawable.ic_label,
     defaultValue = false
 )
 
-val DeviceLockPref = Pref.BooleanPref(
-    key = PREFS_DEVICELOCK,
+val DeviceLockPref = BooleanPref(
+    key = "user." + PREFS_DEVICELOCK,
     titleId = R.string.prefs_devicelock,
     summaryId = R.string.prefs_devicelock_summary,
     iconId = R.drawable.ic_encryption,
@@ -222,8 +231,8 @@ val DeviceLockPref = Pref.BooleanPref(
     defaultValue = false
 )
 
-val BiometricLockPref = Pref.BooleanPref(
-    key = PREFS_BIOMETRICLOCK,
+val BiometricLockPref = BooleanPref(
+    key = "user." + PREFS_BIOMETRICLOCK,
     titleId = R.string.prefs_biometriclock,
     summaryId = R.string.prefs_biometriclock_summary,
     iconId = R.drawable.ic_biometric,
@@ -231,8 +240,8 @@ val BiometricLockPref = Pref.BooleanPref(
     defaultValue = false
 )
 
-val DaysOldPref = Pref.IntPref(
-    key = PREFS_OLDBACKUPS,
+val DaysOldPref = IntPref(
+    key = "user." + PREFS_OLDBACKUPS,
     titleId = R.string.prefs_oldbackups,
     summaryId = R.string.prefs_oldbackups_summary,
     iconId = R.drawable.ic_old,
@@ -241,8 +250,8 @@ val DaysOldPref = Pref.IntPref(
     defaultValue = 2
 )
 
-val RememberFilterPref = Pref.BooleanPref(
-    key = PREFS_REMEMBERFILTERING,
+val RememberFilterPref = BooleanPref(
+    key = "user." + PREFS_REMEMBERFILTERING,
     titleId = R.string.prefs_rememberfiltering,
     summaryId = R.string.prefs_rememberfiltering_summary,
     iconId = R.drawable.ic_filter,
