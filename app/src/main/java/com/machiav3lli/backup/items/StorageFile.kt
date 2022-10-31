@@ -545,6 +545,8 @@ open class StorageFile {
     fun getPath(context: Context?, uri: Uri): String? {
         // DocumentProvider
         if (ContentResolver.SCHEME_CONTENT == uri.scheme) {
+            val currentUserId = Environment.getExternalStorageDirectory().path.split(File.separator).last();
+            val sdBasePath =  "/mnt/runtime/full/emulated/"
             // ExternalStorageProvider
             if (uri.authority?.endsWith("com.android.externalstorage.documents") == true) {
                 val docId = DocumentsContract.getDocumentId(uri)
@@ -552,22 +554,22 @@ open class StorageFile {
                 val type = split[0]
                 // This is for checking Main Memory
                 return if ("primary".equals(type, ignoreCase = true)) {
-                    if (uri.authority?.startsWith("0")!!) {
+                    if (uri.authority?.startsWith("0@")!!) {
                         if (split.size > 1) {
-                            "/storage/emulated/0" + File.separator + split[1]
+                            sdBasePath.plus("0").plus(File.separator).plus(split[1])
                         } else {
-                            "/storage/emulated/0"
+                            sdBasePath.plus("0")
                         }
                     } else {
                         if (split.size > 1) {
-                            Environment.getExternalStorageDirectory().toString() + File.separator + split[1]
+                            sdBasePath.plus(currentUserId).plus(File.separator).plus(split[1])
                         } else {
-                            Environment.getExternalStorageDirectory().toString()
+                            sdBasePath.plus(currentUserId)
                         }
                     }
                     // This is for checking SD Card
                 } else {
-                    "storage" + File.separator + docId.replace(":", File.separator)
+                    "storage".plus(File.separator).plus(docId.replace(":", File.separator))
                 }
             } else if ("com.oasisfeng.island.files.shuttle" == uri.authority) {
                 val docId = DocumentsContract.getDocumentId(uri)
