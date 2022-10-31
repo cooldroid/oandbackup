@@ -34,7 +34,6 @@ import com.machiav3lli.backup.handler.ShellHandler.Companion.findAssetFile
 import com.machiav3lli.backup.handler.ShellHandler.Companion.quote
 import com.machiav3lli.backup.handler.ShellHandler.Companion.quoteMultiple
 import com.machiav3lli.backup.handler.ShellHandler.Companion.runAsRoot
-import com.machiav3lli.backup.handler.ShellHandler.Companion.runAsRootPipeInCollectErr
 import com.machiav3lli.backup.handler.ShellHandler.Companion.utilBoxQ
 import com.machiav3lli.backup.handler.ShellHandler.ShellCommandFailedException
 import com.machiav3lli.backup.handler.ShellHandler.UnexpectedCommandResult
@@ -739,13 +738,12 @@ open class RestoreAppAction(context: Context, work: AppActionWork?, shell: Shell
                     if (pref_excludeCache.value) {
                         options += " --exclude " + quote(excludeCache)
                     }
-                    val suOptions = if (ShellHandler.isMountMaster) "--mount-master" else ""
 
-                    val cmd = "su $suOptions -c sh $qTarScript extract $utilBoxQ $options ${quote(targetDir)}"
+                    val cmd = "sh $qTarScript extract $utilBoxQ $options ${quote(targetDir)}"
 
                     Timber.i("SHELL: $cmd")
 
-                    val out = ShellHandler.runAsUser(cmd); val code = out.code; val err = out.err
+                    val out = runAsRoot(cmd); val code = out.code; val err = out.err
 
                     //---------- ignore error code, because sockets may trigger it
                     // if (err != "") {

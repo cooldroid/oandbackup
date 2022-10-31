@@ -35,7 +35,7 @@ import com.machiav3lli.backup.handler.LogsHandler
 import com.machiav3lli.backup.handler.ShellHandler
 import com.machiav3lli.backup.handler.ShellHandler.Companion.isFileNotFoundException
 import com.machiav3lli.backup.handler.ShellHandler.Companion.quote
-import com.machiav3lli.backup.handler.ShellHandler.Companion.runAsUser
+import com.machiav3lli.backup.handler.ShellHandler.Companion.runAsRoot
 import com.machiav3lli.backup.handler.ShellHandler.Companion.utilBoxQ
 import com.machiav3lli.backup.handler.ShellHandler.ShellCommandFailedException
 import com.machiav3lli.backup.items.ActionResult
@@ -492,7 +492,8 @@ open class BackupAppAction(context: Context, work: AppActionWork?, shell: ShellH
         compress: Boolean,
         iv: ByteArray?
     ): Boolean {
-        if (!ShellUtils.fastCmdResult("test -d ${quote(sourcePath)}"))
+        val mntPath = sourcePath.replaceFirst("/storage/emulated","/mnt/runtime/full/emulated")
+        if (!ShellUtils.fastCmdResult("test -d ${quote(mntPath)}"))
             return false
 
         val password = context.getEncryptionPassword()
@@ -535,19 +536,18 @@ open class BackupAppAction(context: Context, work: AppActionWork?, shell: ShellH
             if (compress) {
                 options += " --compress"
             }
-            val fullFilePath = backupInstanceDir.getPath(context, backupInstanceDir.uri!!)
-                .plus(File.separator).plus(backupFilename)
-            options += " --archive ${quote(fullFilePath)}"
+            val fullFilePath = backupInstanceDir.getPath(context, backupInstanceDir.uri!!).toString()
+            options += " --archive ${quote(fullFilePath.plus(File.separator).plus(backupFilename))}"
             options += " --exclude ${quote(exclude)}"
             if (pref_excludeCache.value) {
                 options += " --exclude ${quote(excludeCache)}"
             }
 
-            val cmd = "sh ${quote(tarScript)} create $utilBoxQ $options ${quote(sourcePath)}"
+            val cmd = "test ! -d ${quote(fullFilePath)} && mkdir -p ${quote(fullFilePath)}; sh ${quote(tarScript)} create $utilBoxQ $options ${quote(mntPath)}"
 
             Timber.i("SHELL: $cmd")
 
-            val out = runAsUser(cmd); val code = out.code; val err = out.err
+            val out = runAsRoot(cmd); val code = out.code; val err = out.err
 
             //---------- ignore error code, because sockets may trigger it
             // if (err != "") {
