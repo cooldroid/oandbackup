@@ -51,7 +51,6 @@ import com.machiav3lli.backup.utils.CIPHER_ALGORITHM
 import com.machiav3lli.backup.utils.CryptoSetupException
 import com.machiav3lli.backup.utils.FileUtils.BackupLocationInAccessibleException
 import com.machiav3lli.backup.utils.StorageLocationNotConfiguredException
-import com.machiav3lli.backup.utils.binaryMimeType
 import com.machiav3lli.backup.utils.encryptStream
 import com.machiav3lli.backup.utils.getCompressionLevel
 import com.machiav3lli.backup.utils.getCryptoSalt
@@ -374,7 +373,7 @@ open class BackupAppAction(context: Context, work: AppActionWork?, shell: ShellH
         try {
             val apk = appPackage.packageInfo.sourceDir.toString()
             ZipOutputStream(
-                targetDir.createFile(binaryMimeType, RootFile(apk).name.plus("s"))
+                targetDir.createFile(RootFile(apk).name.plus("s"))
                     .outputStream()
             ).use { zipOutputStream ->
                 val apkFiles: MutableList<File> = ArrayList()
