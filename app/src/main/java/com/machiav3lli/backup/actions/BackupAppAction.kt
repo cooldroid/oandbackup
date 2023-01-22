@@ -343,7 +343,7 @@ open class BackupAppAction(context: Context, work: AppActionWork?, shell: ShellH
             Timber.e("$app: Could not backup apk ${app.packageName}: $e")
             throw BackupFailedException("Could not backup apk ${app.packageName}", e)
         } catch (e: Throwable) {
-            LogsHandler.unhandledException(e, app)
+            LogsHandler.unexpectedException(e, app)
             throw BackupFailedException("Could not backup apk ${app.packageName}", e)
         }
     }
