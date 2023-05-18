@@ -306,8 +306,8 @@ open class StorageFile {
                             // NOTE: lockups occur in emulator (or A12?) for certain paths
                             // e.g. /storage/emulated/$user
                             val possiblePaths = listOf(
-                                "/mnt/media_rw/$storage/$subpath",
                                 "/mnt/pass_through/$user/$storage/$subpath",
+                                "/mnt/media_rw/$storage/$subpath",
                                 "/mnt/runtime/full/$storage/$subpath",
                                 "/mnt/runtime/default/$storage/$subpath",
 
@@ -669,7 +669,7 @@ open class StorageFile {
         // DocumentProvider
         if (ContentResolver.SCHEME_CONTENT == uri.scheme) {
             val currentUserId = Environment.getExternalStorageDirectory().path.split(File.separator).last();
-            val sdBasePath =  "/mnt/runtime/full/emulated/"
+            val sdBasePath =  "/mnt/pass_through/" + ShellCommands.currentUser + "/emulated/"
             // ExternalStorageProvider
             if (uri.authority?.endsWith("com.android.externalstorage.documents") == true) {
                 val docId = DocumentsContract.getDocumentId(uri)

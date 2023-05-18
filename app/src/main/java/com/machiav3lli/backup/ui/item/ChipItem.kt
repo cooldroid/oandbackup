@@ -211,8 +211,7 @@ data class ChipItem(
         val LastUpdated = ChipItem(
             MAIN_SORT_LASTUPDATED,
             R.string.sortByLastUpdated,
-            Phosphor.ArchiveTray,
-            R.color.ic_exodus
+            Phosphor.ArchiveTray
         )
     }
 }

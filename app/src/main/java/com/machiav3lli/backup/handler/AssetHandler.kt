@@ -49,17 +49,15 @@ class AssetHandler(context: Context) {
     // @machiav3lli libs are generally created while installing the app. Backing them up
     // would result a compatibility problem between devices with different cpu_arch
 
-    val MORE_BASENAMES = listOfNotNull("app_webview*", "app_textures", "app_sslcache", "app_google_tagmanager", "code_cache", "files/.Fabric", "files/socket_pipe", "oat", "lib-*")
-
     val DATA_BACKUP_EXCLUDED_BASENAMES get() = listOfNotNull(
         "lib",      //TODO hg42 what about architecture dependent names? or may be application specific? lib* ???
-        MORE_BASENAMES,
+        "app_webview*", "app_textures", "app_sslcache", "app_google_tagmanager", "code_cache", "files/.Fabric", "files/socket_pipe", "oat", "lib-*",
         if (!pref_backupNoBackupData.value) "no_backup" else null //TODO hg42 use Context.getNoBackupFilesDir() ??? tricky, because it's an absolute path (remove common part...)
     )
 
     val DATA_RESTORE_EXCLUDED_BASENAMES get() = listOfNotNull(
         "lib",      //TODO hg42 what about architecture dependent names? or may be application specific? lib* ???
-        MORE_BASENAMES,
+        "app_webview*", "app_textures", "app_sslcache", "app_google_tagmanager", "code_cache", "files/.Fabric", "files/socket_pipe", "oat", "lib-*",
         if (!pref_restoreNoBackupData.value) "no_backup" else null //TODO hg42 use Context.getNoBackupFilesDir() ??? tricky, because it's an absolute path (remove common part...)
     )
 

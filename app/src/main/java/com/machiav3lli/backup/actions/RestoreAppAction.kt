@@ -267,7 +267,7 @@ open class RestoreAppAction(context: Context, work: AppActionWork?, shell: Shell
                     RootFile(stagingApkPath, "$packageName.${apkFile.name}").absolutePath
                 )
             }
-            val disableVerification = context.isDisableVerification
+            val disableVerification = isDisableVerification
             val stagingFile = RootFile(stagingApkPath, "$packageName.${baseApkFile.name}")
             if (splitApksInBackup.isEmpty()) {
                 val sb = StringBuilder()
@@ -281,7 +281,7 @@ open class RestoreAppAction(context: Context, work: AppActionWork?, shell: Shell
                     )
                 )
                 val commandWithoutPermissions = sb.toString()
-                if (!context.isRestoreAllPermissions && pref_restorePermissions.value)
+                if (!isRestoreAllPermissions && pref_restorePermissions.value)
                     backup.permissions
                         .filterNot { it.isEmpty() }
                         .forEach { p ->
@@ -342,7 +342,7 @@ open class RestoreAppAction(context: Context, work: AppActionWork?, shell: Shell
                         sb.append(getSessionCommitCommand(sessionId))
 
                         val commandWithoutPermissions = sb.toString()
-                        if (!context.isRestoreAllPermissions && pref_restorePermissions.value)
+                        if (!isRestoreAllPermissions && pref_restorePermissions.value)
                             backup.permissions
                                 .filterNot { it.isEmpty() }
                                 .forEach { p ->

@@ -29,6 +29,7 @@ import com.machiav3lli.backup.OABX
 import com.machiav3lli.backup.dbs.entity.Backup
 import com.machiav3lli.backup.handler.BackupBuilder
 import com.machiav3lli.backup.handler.LogsHandler
+import com.machiav3lli.backup.handler.ShellCommands
 import com.machiav3lli.backup.handler.ShellHandler
 import com.machiav3lli.backup.handler.ShellHandler.Companion.isFileNotFoundException
 import com.machiav3lli.backup.handler.ShellHandler.Companion.quote
@@ -356,7 +357,7 @@ open class BackupAppAction(context: Context, work: AppActionWork?, shell: ShellH
             Timber.e("$app: Could not backup apk ${app.packageName}: $e")
             throw BackupFailedException("Could not backup apk ${app.packageName}", e)
         } catch (e: Throwable) {
-            LogsHandler.unhandledException(e, app)
+            LogsHandler.unexpectedException(e, app)
             throw BackupFailedException("Could not backup apk ${app.packageName}", e)
         }
     }
@@ -379,7 +380,7 @@ open class BackupAppAction(context: Context, work: AppActionWork?, shell: ShellH
                 )
                 //APKs
                 for (apkFile in apkFiles) {
-                    Timber.i("${app.packageName}: $apkFile")
+                    Timber.i("${appPackage.packageName}: $apkFile")
                     zipOutputStream.setMethod(ZipOutputStream.STORED)
                     val zipEntry = ZipEntry(apkFile.name)
                     zipEntry.method = ZipEntry.STORED
@@ -487,7 +488,7 @@ open class BackupAppAction(context: Context, work: AppActionWork?, shell: ShellH
         compress: Boolean,
         iv: ByteArray?,
     ): Boolean {
-        val mntPath = sourcePath.replaceFirst("/storage/emulated","/mnt/runtime/full/emulated")
+        val mntPath = sourcePath.replaceFirst("/storage/emulated","/mnt/pass_through/" + ShellCommands.currentUser + "/emulated/")
         if (!ShellUtils.fastCmdResult("test -d ${quote(mntPath)}"))
             return false
 
