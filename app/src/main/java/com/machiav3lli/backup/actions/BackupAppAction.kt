@@ -495,7 +495,7 @@ open class BackupAppAction(context: Context, work: AppActionWork?, shell: ShellH
         Timber.i("Creating $dataType backup via tar")
         val backupFilename = getBackupArchiveFilename(
             dataType,
-            shouldCompress,
+            compress,
             getCompressionType(),
             iv != null && isEncryptionEnabled()
         )
@@ -534,7 +534,6 @@ open class BackupAppAction(context: Context, work: AppActionWork?, shell: ShellH
                 Timber.i("tar returns: code $code: $err") // at least log the full error
 
             val errLines = err
-                .split("\n")
                 .filterNot { line ->
                     line.isBlank()
                             || line.contains("tar: unknown file type") // e.g. socket 140000

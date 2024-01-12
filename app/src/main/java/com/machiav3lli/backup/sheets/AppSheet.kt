@@ -273,7 +273,7 @@ fun AppSheet(
                 verticalArrangement = Arrangement.spacedBy(8.dp),
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
                 contentPadding = PaddingValues(8.dp)
-            ) {
+            ) { /*
                 item {
                     AnimatedVisibility(visible = !pkg.isSpecial) {
                         CardButton(
@@ -332,7 +332,7 @@ fun AppSheet(
                             openDialog.value = true
                         }
                     }
-                }
+                } */
                 item {
                     AnimatedVisibility(
                         visible = pkg.isInstalled && !pkg.isSpecial
@@ -369,7 +369,7 @@ fun AppSheet(
                             }
                         )
                     }
-                }
+                } /*
                 item(span = { GridItemSpan(columns) }) {
                     Column {
                         TitleText(textId = R.string.title_tags)
@@ -413,7 +413,7 @@ fun AppSheet(
                             )
                         }
                     }
-                }
+                } */
                 item(span = { GridItemSpan(columns) }) {
                     TitleText(textId = R.string.available_actions)
                 }
