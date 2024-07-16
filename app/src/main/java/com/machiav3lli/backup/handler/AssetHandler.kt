@@ -55,6 +55,9 @@ class AssetHandler(context: Context) {
         "code_cache"
     )
 
+    val MORE_BASENAMES get() = listOf("app_webview*", "app_textures", "app_sslcache",
+        "app_google_tagmanager", "files/.Fabric", "files/socket_pipe", "oat", "lib-*")
+
     // libs are generally created while installing the app. Backing them up
     // would result in a compatibility problem between devices with different cpu_arch
 
@@ -65,13 +68,13 @@ class AssetHandler(context: Context) {
     // these need to be dynamic, becasue the preferences can change at runtime
 
     val DATA_BACKUP_EXCLUDED_BASENAMES get() = (
-            LIB_DIRS
+            LIB_DIRS + MORE_BASENAMES
             + if (pref_backupNoBackupData.value) listOf() else listOf("no_backup") //TODO hg42 use Context.getNoBackupFilesDir() ??? tricky, because it's an absolute path (remove common part...)
             + if (pref_backupCache.value) listOf() else DATA_EXCLUDED_CACHE_DIRS
             )
 
     val DATA_RESTORE_EXCLUDED_BASENAMES get() = (
-            LIB_DIRS
+            LIB_DIRS + MORE_BASENAMES
             + if (pref_restoreNoBackupData.value) listOf() else listOf("no_backup") //TODO hg42 use Context.getNoBackupFilesDir() ??? tricky, because it's an absolute path (remove common part...)
             + if (pref_restoreCache.value) listOf() else DATA_EXCLUDED_CACHE_DIRS
             )
