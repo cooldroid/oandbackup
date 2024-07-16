@@ -731,7 +731,7 @@ class ShellHandler {
         class SuRunnableShellCommand : RunnableShellCommand {
             @SuppressLint("RestrictedApi") // TODO re-evaluate this
             override fun runCommand(command: String): Shell.Job {
-                return MainShell.newJob(true, command)
+                return MainShell.newJob(command)
             }
         }
 
